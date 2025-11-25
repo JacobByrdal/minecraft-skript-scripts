@@ -16,7 +16,7 @@ variables:
   {dragonheart.dropped} = false
   {dragonheart.player} = "" # who obtained it
 
-  {adragonheart.count} = 0 # how many Artificial Dragon's Hearts have dropped total
+  {adragonheart.count} = 0 # how many Artificial Dragon's Hearts have dropped total #'
   {adragonheart.lastplayer} = "" # who got the most recent one
 
   {voidHeart.count} = 0       # total number obtained
