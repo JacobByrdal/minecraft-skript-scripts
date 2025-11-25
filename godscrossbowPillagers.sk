@@ -1,0 +1,303 @@
+options:
+  gxc.raid-world: world      # world where pillager groups spawn
+  gxc.minigun_interval: 3    # ticks between boss shots
+
+
+variables:
+  {gxc.lastRaid} = none        # when the last raid spawned (for cooldown)
+  {gxc.bossKilled} = false     # has the boss ever been killed?
+  {gxc.raidMobs::*} = none     # current raid entities (boss + followers)
+  {gxc.raidBoss} = none        # current boss entity
+  {gxc.despawning} = false     # true while script is force-despawning the raid
+
+
+
+# ==========================================
+# RANDOM RAID LOCATION
+# ==========================================
+function gxc_random_raid_location() :: location:
+    set {_w} to world "{@gxc.raid-world}"
+    if {_w} is not set:
+        set {_w} to world "world"
+
+    set {_i} to random integer between 1 and 8
+
+    if {_i} = 1:
+        set {_loc} to location -294, 66, 320 in {_w}
+    else if {_i} = 2:
+        set {_loc} to location -125, 77, -414 in {_w}
+    else if {_i} = 3:
+        set {_loc} to location 560, 70, -1313 in {_w}
+    else if {_i} = 4:
+        set {_loc} to location 1013, 68, -1464 in {_w}
+    else if {_i} = 5:
+        set {_loc} to location 1638, 131, -1329 in {_w}
+    else if {_i} = 6:
+        set {_loc} to location 1633, 131, -1197 in {_w}
+    else if {_i} = 7:
+        set {_loc} to location 2067, 93, -802 in {_w}
+    else:
+        set {_loc} to location 2780, 103, -142 in {_w}
+
+    return {_loc}
+
+
+# ==========================================
+# SPAWN THE CROSSBOW RAID (boss + followers)
+# + start 10-minute despawn timer
+# ==========================================
+function gxc_spawn_crossbow_raid():
+    # if boss already killed once, never spawn again
+    if {gxc.bossKilled} is true:
+        stop
+
+    set {_loc} to gxc_random_raid_location()
+
+    delete {gxc.raidMobs::*}
+    delete {gxc.raidBoss}
+
+    # Boss
+    spawn pillager at {_loc}
+    set {_boss} to last spawned entity
+    set name of {_boss} to "&d&lGods Crossbow Weilder"
+    set max health of {_boss} to 200
+    set health of {_boss} to 200
+    set {gxc.raidBoss} to {_boss}
+    add {_boss} to {gxc.raidMobs::*}
+
+    # Followers
+    loop 4 times:
+        set {_fLoc} to {_loc}
+        add random integer between -3 and 3 to x-coordinate of {_fLoc}
+        add random integer between -3 and 3 to z-coordinate of {_fLoc}
+        spawn pillager at {_fLoc}
+        set {_follower} to last spawned entity
+        set name of {_follower} to "&7Follower"
+        add {_follower} to {gxc.raidMobs::*}
+
+    broadcast "&c⚔ &dGods Crossbow Weilder &7and his followers have appeared somewhere in the world..."
+    #broadcast "&c⚔ &dGods Crossbow Weilder &7and his followers have appeared at &f%round(x-coordinate of {_loc})%, %round(y-coordinate of {_loc})%, %round(z-coordinate of {_loc})%&7!"
+
+
+
+# ==========================================
+# DESPAWN RAID IF ALIVE AFTER X MINUTES currently 10 minuttter
+# ==========================================
+every 10 seconds:
+    if {gxc.bossKilled} is false:
+        if {gxc.lastRaid} is set:
+            set {_elapsed} to difference between now and {gxc.lastRaid}
+
+            if {_elapsed} >= 10 minutes:
+
+                # Run the same command the admin would use
+                execute console command "killgodscrossbowraid"
+
+
+
+
+
+
+# ==========================================
+# ADMIN COMMAND TO FORCE-SPAWN THE RAID
+# ==========================================
+command /summongodscrossbowraid:
+  permission: godsitems.crossbow.give
+  trigger:
+    if {gxc.bossKilled} is true:
+      send "&cThis raid has already been defeated and will never return." to player
+      stop
+    gxc_spawn_crossbow_raid()
+    set {gxc.lastRaid} to now
+
+
+# ==========================================
+# MINIGUN AI FOR GODS CROSSBOW WEILDER
+# ==========================================
+every {@gxc.minigun_interval} ticks:
+  loop all entities:
+    if loop-entity is a pillager:
+      if name of loop-entity is "&d&lGods Crossbow Weilder":
+        set {_boss} to loop-entity
+
+        # find nearest player in 30 blocks
+        set {_target} to none
+        set {_bestDist} to 9999
+
+        loop all players:
+          if world of loop-player is world of {_boss}:
+            set {_d} to distance between location of loop-player and location of {_boss}
+            if {_d} <= 30:
+              if {_d} < {_bestDist}:
+                set {_bestDist} to {_d}
+                set {_target} to loop-player
+
+        if {_target} is not none:
+          # "Minigun" hit instead of shooting an arrow
+          damage {_target} by 2                # 2 HP = 1 hearts
+
+
+# ==========================================
+# AUTO-SPAWN CHANCE (any time of day)
+# ==========================================
+every 5 minutes:
+  if {gxc.bossKilled} is true:
+    stop
+
+  # Do not spawn if no one is online
+  if number of all players = 0:
+    stop
+
+  # Cooldown: at least 15 minutes between raids
+  if {gxc.lastRaid} is set:
+    set {_elapsed} to difference between now and {gxc.lastRaid}
+    if {_elapsed} < 15 minutes:
+      stop
+
+  # Chance: 1 in 100 every 5 minutes 
+  if random integer between 1 and 100 = 1:
+    set {gxc.lastRaid} to now
+    gxc_spawn_crossbow_raid()
+
+
+
+
+
+# ==========================================
+# MARK BOSS AS PERMANENTLY KILLED (ONLY IF NOT DESPAWNING)
+# ==========================================
+on death of pillager:
+  # ignore deaths caused by the despawn code
+  if {gxc.despawning} is true:
+    stop
+
+  if name of victim is "&d&lGods Crossbow Weilder":
+    set {gxc.bossKilled} to true
+    delete {gxc.raidMobs::*}
+    delete {gxc.raidBoss}
+    broadcast "&dGods Crossbow Weilder &7has been defeated and will never return!"
+
+
+
+
+command /resetcrossbowraid:
+    permission: godsitems.crossbow.admin
+    trigger:
+        delete {gxc.bossKilled}
+        delete {gxc.lastRaid}
+        delete {gxc.raidMobs::*}
+        delete {gxc.raidBoss}
+        set {gxc.bossKilled} to false
+        send "&a✔ Crossbow raid system has been fully reset. The boss can spawn again."
+
+
+command /tpgodscrossbowraid:
+  permission: godsitems.crossbow.tp
+  trigger:
+    # Make sure there is a stored boss
+    if {gxc.raidBoss} is not set:
+      send "&cThere is currently no active Gods Crossbow raid." to player
+      stop
+
+    # Optional safety: make sure it's still a living entity
+    if {gxc.raidBoss} is not a living entity:
+      send "&cThe raid boss is no longer alive." to player
+      delete {gxc.raidBoss}
+      stop
+
+    # Teleport the executor to the boss
+    teleport player to location of {gxc.raidBoss}
+    send "&a✔ Teleported to &dGods Crossbow Weilder&a!" to player
+
+
+command /killgodscrossbowraid:
+  permission: godsitems.crossbow.admin
+  trigger:
+    set {_found} to false
+    set {gxc.despawning} to true
+
+    # First try: kill in already-loaded chunks
+    loop all entities:
+      if loop-entity is a pillager:
+        set {_n} to name of loop-entity
+
+        if {_n} is "&d&lGods Crossbow Weilder":
+          kill loop-entity
+          set {_found} to true
+
+        else if {_n} is "&7Follower":
+          kill loop-entity
+          set {_found} to true
+
+    set {gxc.despawning} to false
+
+    # If we found something already, finish like before
+    if {_found} is true:
+      broadcast "&7The &dGods Crossbow Weilder &7and his followers have vanished..."
+      delete {gxc.raidMobs::*}
+      delete {gxc.raidBoss}
+      delete {gxc.lastRaid}
+      stop
+
+    # --- FALLBACK: use a random player to load possible raid chunks ---
+
+    # No one online? Then we really can't do anything
+    if number of all players <= 0:
+      send "&cNo active Gods Crossbow raid was found (no players online to scan chunks)." to executor
+      stop
+
+    set {_p} to random element out of all players
+    set {_origLoc} to location of {_p}
+
+    # Build list of all possible raid locations (same as your random function)
+    set {_w} to world "{@gxc.raid-world}"
+    if {_w} is not set:
+      set {_w} to world "world"
+
+    delete {_locs::*}
+    add location -294, 66, 320 in {_w} to {_locs::*}
+    add location -125, 77, -414 in {_w} to {_locs::*}
+    add location 560, 70, -1313 in {_w} to {_locs::*}
+    add location 1013, 68, -1464 in {_w} to {_locs::*}
+    add location 1638, 131, -1329 in {_w} to {_locs::*}
+    add location 1633, 131, -1197 in {_w} to {_locs::*}
+    add location 2067, 93, -802 in {_w} to {_locs::*}
+    add location 2780, 103, -142 in {_w} to {_locs::*}
+
+    set {gxc.despawning} to true
+
+    loop {_locs::*}:
+      teleport {_p} to loop-value
+      wait 5 ticks # give the chunk a moment to load
+
+      loop all entities:
+        if loop-entity is a pillager:
+          set {_n} to name of loop-entity
+
+          if {_n} is "&d&lGods Crossbow Weilder":
+            kill loop-entity
+            set {_found} to true
+
+          else if {_n} is "&7Follower":
+            kill loop-entity
+            set {_found} to true
+
+    # Send the player back
+    teleport {_p} to {_origLoc}
+    set {gxc.despawning} to false
+
+    if {_found} is true:
+      broadcast "&7The &dGods Crossbow Weilder &7and his followers have vanished..."
+      delete {gxc.raidMobs::*}
+      delete {gxc.raidBoss}
+      delete {gxc.lastRaid}
+    else:
+      #send "&cNo active Gods Crossbow raid was found." to executor
+
+
+
+
+
+
+
+

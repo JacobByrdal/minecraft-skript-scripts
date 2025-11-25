@@ -1,0 +1,82 @@
+# === GODS ITEM: Gods Crossbow (Minigun) ===
+# Hold right-click to fire repeatedly. Sneak or switch items to stop.
+
+options:
+  gxc.fire_interval_ticks: 3     # lower = faster (2–4 is good)
+  gxc.out_msg_cooldown: 2        # seconds between "Out of arrows" messages
+  gxc.infinite_ammo: false       # set to true for infinite arrows
+
+# no variable declarations needed; Skript will create them when set
+
+command /givegodscrossbow [<player>]:
+  permission: godsitems.crossbow.give
+  trigger:
+    set {_i} to crossbow named "&d&lGods Crossbow"
+    clear {_l::*}
+    add "&7Press Right-Click to fire like a minigun." to {_l::*}
+    add "&7Sneak or switch items to stop." to {_l::*}
+    add "&8Ammo: Arrows" to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    if arg-1 is set:
+      give {_i} to arg-1
+      send "&aGave &dGods Crossbow &ato &e%arg-1%&a."
+    else:
+      give {_i} to player
+      send "&aYou received a &dGods Crossbow&a."
+
+# start firing when right-clicking with the crossbow
+on right click with crossbow:
+  if name of player's tool is not "&d&lGods Crossbow":
+    stop
+  if {gxc.active.%player%} is true:
+    stop
+
+  set {gxc.active.%player%} to true
+  send "&d[Gods Crossbow]&7 Minigun engaged! (&8sneak/switch to stop&7)" to player
+
+  while {gxc.active.%player%} is true:
+    # stop if not still holding, sneaking, or dead
+    if name of player's tool is not "&d&lGods Crossbow":
+      set {gxc.active.%player%} to false
+      stop loop
+    if player is sneaking:
+      set {gxc.active.%player%} to false
+      stop loop
+    if player is dead:
+      set {gxc.active.%player%} to false
+      stop loop
+
+    # ammo check (skip if infinite)
+    set {_canShoot} to {@gxc.infinite_ammo}
+    if {_canShoot} is false:
+      if player has 1 of arrow:
+        remove 1 of arrow from player's inventory
+        set {_canShoot} to true
+      else:
+        if {gxc.lastOutMsg.%player%} is not set:
+          set {gxc.lastOutMsg.%player%} to now - {@gxc.out_msg_cooldown} seconds
+        set {_since} to difference between now and {gxc.lastOutMsg.%player%}
+        if {_since} >= {@gxc.out_msg_cooldown} seconds:
+          set {gxc.lastOutMsg.%player%} to now
+          send "&cOut of arrows!" to player
+
+    if {_canShoot} is true:
+      shoot arrow from player
+
+    wait {@gxc.fire_interval_ticks} ticks
+
+  send "&d[Gods Crossbow]&7 Minigun disengaged." to player
+
+# safety: stop on quit/death
+on quit:
+  set {gxc.active.%player%} to false
+
+on death of player:
+  set {gxc.active.%victim%} to false
+
+
+
+
+
+
