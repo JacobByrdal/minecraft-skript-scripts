@@ -1,0 +1,7 @@
+{
+  // Temporary mapping: maps *.sk to the existing 'groovy' grammar
+  // This gives basic highlighting until you install a Skript extension
+  "files.associations": {
+    "*.sk": "groovy"
+  }
+}
