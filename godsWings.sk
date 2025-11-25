@@ -1,0 +1,102 @@
+# ======================================
+# GOD ITEM: Gods Wings (Boost Elytra)
+# ======================================
+
+options:
+  godwings.item.name: &d&lGODS WINGS
+  godwings.tick: 2                 # how often to apply boost (ticks)
+  godwings.boost.speed: 0.2        # forward boost strength
+  godwings.lift.speed: 0.0        # slight upward lift (0 = none)
+  godwings.crash.reduction: 40     # percent of elytra collision damage reduced (0–100)
+
+# --------------------------------------
+# /givegodwings
+# --------------------------------------
+command /givegodwings [<player>]:
+  permission: godsitems.godwings.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    set {_elytra} to elytra named "{@godwings.item.name}"
+
+    clear {_lore::*}
+    add "&7Forged from celestial feathers and divine light." to {_lore::*}
+    add "&7These wings carry the blessing of the sky gods themselves." to {_lore::*}
+    add "" to {_lore::*}
+    add "&d&lABILITIES:" to {_lore::*}
+    add "&7• &dGlide + Hold Sneak&7: &fUnleash divine propulsion." to {_lore::*}
+    add "&7• &dEndless Flight&7: &fNo rockets. No limits." to {_lore::*}
+    add "" to {_lore::*}
+    add "&d&lDETAILS:" to {_lore::*}
+    add "&7Tick Interval: &e{@godwings.tick} ticks" to {_lore::*}
+    add "&7Boost Power: &e{@godwings.boost.speed} forward" to {_lore::*}
+    add "&7Collision Protection: &e{@godwings.crash.reduction} procent less elytra impact damage" to {_lore::*}
+    add "" to {_lore::*}
+    add "&7It is said those who soar with these wings" to {_lore::*}
+    add "&7defy gravity, destiny, and even the gods themselves." to {_lore::*}
+    add "" to {_lore::*}
+    add "&8&o(Use with care — mortal frames were not made to hold divine speed)" to {_lore::*}
+    set lore of {_elytra} to {_lore::*}
+
+    give {_elytra} to {_p}
+    send "&aYou have been granted &dGODS WINGS&a." to {_p}
+    if {_p} is not player:
+      send "&aGave &dGODS WINGS &ato &e%{_p}%&a." to player
+
+# --------------------------------------
+# Passive booster: while gliding + sneaking with Gods Wings
+# --------------------------------------
+every {@godwings.tick} ticks:
+  loop all players:
+    set {_p} to loop-player
+
+    # Must be wearing Gods Wings
+    set {_chest} to chestplate of {_p}
+    if {_chest} is not set:
+      continue
+    if name of {_chest} is not "{@godwings.item.name}":
+      continue
+
+    # Must be gliding and sneaking (SHIFT)
+    if {_p} is not gliding:
+      continue
+    if {_p} is not sneaking:
+      continue
+
+    # --- BOOST LIKE FIREWORKS (no commands, just physics) ---
+    # Push forward in the direction theyre facing
+    push {_p} forward with speed {@godwings.boost.speed}
+
+    # Optional: slight upward lift so it really feels like rockets
+    #     if {@godwings.lift.speed} > 0:
+    #       push {_p} upwards with speed {@godwings.lift.speed}
+
+    # If your Skript supports it, you can try a simple firework sound like:
+    # play sound "entity.firework_rocket.launch" at {_p}
+
+
+# --------------------------------------
+# Reduce damage while gliding with Gods Wings
+# --------------------------------------
+on damage of player:
+  set {_p} to victim
+
+  # Must be wearing Gods Wings
+  set {_chest} to chestplate of {_p}
+  if {_chest} is not set:
+    stop
+  if name of {_chest} is not "{@godwings.item.name}":
+    stop
+
+  # Only reduce damage while gliding (elytra flight)
+  if {_p} is not gliding:
+    stop
+
+  # Scale damage down
+  set {_dmg} to damage
+  set {_factor} to (100 - {@godwings.crash.reduction}) / 100
+  set {_new} to {_dmg} * {_factor}
+  set damage to {_new}

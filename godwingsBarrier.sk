@@ -1,0 +1,76 @@
+variables:
+  {godwings.barrierOpen} = false
+  {godwings.barrierOpenedAt} = none
+
+
+# === GODS WINGS: barrier control around (0,0) in the End ===
+options:
+  godwings.end-world: world_the_end
+
+function _godwings_open_barrier():
+    set {_w} to world "{@godwings.end-world}"
+    if {_w} is not set:
+        stop
+
+    # turn the barrier blocks to air
+    set block at location 1.5, 254, 31.5 in {_w} to air
+    set block at location 0.5, 254, 30.5 in {_w} to air
+    set block at location -0.5, 254, 31.5 in {_w} to air
+    set block at location 0.5, 254, 32.5 in {_w} to air
+    set block at location 0.5, 255, 31.5 in {_w} to air
+    set block at location 0.5, 253, 31.5 in {_w} to air
+
+function _godwings_close_barrier():
+    set {_w} to world "{@godwings.end-world}"
+    if {_w} is not set:
+        stop
+
+    # place the barrier blocks back
+    set block at location 1.5, 254, 31.5 in {_w} to barrier
+    set block at location 0.5, 254, 30.5 in {_w} to barrier
+    set block at location -0.5, 254, 31.5 in {_w} to barrier
+    set block at location 0.5, 254, 32.5 in {_w} to barrier
+    set block at location 0.5, 255, 31.5 in {_w} to barrier
+    set block at location 0.5, 253, 31.5 in {_w} to barrier
+
+on load:
+    # make sure the barrier is closed on server start
+    _godwings_close_barrier()
+    set {godwings.barrierOpen} to false
+    clear {godwings.dragonKills::*}
+    set {godwings.barrierOpenedAt} to none
+
+
+# === GODS WINGS: open barrier when 5 dragons die within 20 minutes ===
+on death of ender dragon:
+    set {_now} to now
+
+    # record this kill time
+    add {_now} to {godwings.dragonKills::*}
+
+    # remove any kills older than 20 minutes from the list
+    loop {godwings.dragonKills::*}:
+        set {_age} to difference between {_now} and loop-value
+        if {_age} > 20 minutes:
+            remove loop-value from {godwings.dragonKills::*}
+
+    # if we have at least 5 kills in the last 20 minutes and barrier isnt already open…
+    if size of {godwings.dragonKills::*} >= 5:
+        if {godwings.barrierOpen} is not true:
+            set {godwings.barrierOpen} to true
+            set {godwings.barrierOpenedAt} to {_now}
+            _godwings_open_barrier()
+            #broadcast "&d🪽 The power of &d&lGODS WINGS&d has opened the End barrier! (&75 dragons in 20 minutes&d)"
+
+
+# Close the barrier 1 minutes after it was opened
+every 10 seconds:
+    if {godwings.barrierOpen} is true:
+        if {godwings.barrierOpenedAt} is set:
+            set {_now} to now
+            set {_elapsed} to difference between {_now} and {godwings.barrierOpenedAt}
+            if {_elapsed} >= 1 minutes:
+                set {godwings.barrierOpen} to false
+                clear {godwings.dragonKills::*}
+                _godwings_close_barrier()
+                broadcast "&d🪽 The End barrier has been restored as the power of Gods Wings fades."
