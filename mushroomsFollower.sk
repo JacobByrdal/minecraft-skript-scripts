@@ -1,0 +1,255 @@
+# ======================================
+# GOD ITEM: Mushroom Follower
+# ======================================
+
+options:
+  shroom.item.name: &d&lMUSHROOMS FOLLOWER
+  hit.cooldown.red.seconds: 20
+  hit.cooldown.brown.seconds: 20
+
+
+# -------------------------------
+# /givefollowersmushroom
+# -------------------------------
+command /givefollowersmushroom [<player>]:
+  permission: godsitems.godmushroom.give
+  trigger:
+    set {_i} to red mushroom named "{@shroom.item.name}"
+
+    clear {_l::*}
+    add "&7A sacred mushroom carried by devoted followers." to {_l::*}
+    add "&7It carries half the power of &d&lGODS MUSHROOM&7." to {_l::*}
+    add "&7Its aura binds itself to those who accept its call." to {_l::*}
+    add "&7Legends say it chooses its bearer, not the other way." to {_l::*}
+    add "&7The fungus bonds to your soul, feeding on your will." to {_l::*}
+    add "&7Two forms reflect your intent." to {_l::*}
+    add "" to {_l::*}
+    add "&cRed &7— fury of spores." to {_l::*}
+    add "&6Brown &7— blessing of earth." to {_l::*}
+    add "" to {_l::*}
+    add "&7Follow the fungus. Become part of its cycle." to {_l::*}
+
+    add "" to {_l::*}
+    add "&dRIGHT CLICK (ground)&7: place small shroom" to {_l::*}
+    add "&dHIT PLAYER&7: apply mode effects" to {_l::*}
+    add "" to {_l::*}
+    add "&dSNEAK + LEFT CLICK&7: toggle &cRed &7↔ &6Brown" to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    if arg-1 is set:
+      give {_i} to arg-1
+      set {godshroom.mode.%uuid of arg-1%} to "red"
+      send "&aGave {@shroom.item.name}&a to &e%arg-1%&a." to player
+    else:
+      give {_i} to player
+      set {godshroom.mode.%uuid of player%} to "red"
+      send "&aYou received {@shroom.item.name}&a." to player
+
+
+# ===========================
+# SHIFT + LEFT CLICK = toggle
+# ===========================
+on left click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@shroom.item.name}":
+    stop
+  if player is not sneaking:
+    stop
+
+  set {_id} to uuid of player
+  if {godshroom.mode.%{_id}%} is not set:
+    set {godshroom.mode.%{_id}%} to "red"
+
+  clear {_lore::*}
+  add "&7A sacred mushroom carried by devoted followers." to {_lore::*}
+  add "&7It carries half the power of &d&lGODS MUSHROOM&7." to {_lore::*}
+  add "&7Its aura binds itself to those who accept its call." to {_lore::*}
+  add "&7Legends say it chooses its bearer, not the other way." to {_lore::*}
+  add "&7The fungus bonds to your soul, feeding on your will." to {_lore::*}
+  add "&7Two forms reflect your intent." to {_lore::*}
+  add "" to {_lore::*}
+  add "&cRed &7— fury of spores." to {_lore::*}
+  add "&6Brown &7— blessing of earth." to {_lore::*}
+  add "" to {_lore::*}
+  add "&7Follow the fungus. Become part of its cycle." to {_lore::*}
+
+  add "" to {_lore::*}
+  add "&dRIGHT CLICK (ground)&7: place small shroom" to {_lore::*}
+  add "&dHIT PLAYER&7: apply mode effects" to {_lore::*}
+  add "" to {_lore::*}
+  add "&dSNEAK + LEFT CLICK&7: toggle &cRed &7↔ &6Brown" to {_lore::*}
+
+  set {_amt} to amount of {_held}
+
+  if {godshroom.mode.%{_id}%} is "red":
+    set {godshroom.mode.%{_id}%} to "brown"
+    set {_new} to brown mushroom named "{@shroom.item.name}"
+    set lore of {_new} to {_lore::*}
+    set amount of {_new} to {_amt}
+    set player's tool to {_new}
+    send "&6MUSHROOMS FOLLOWER &7» Mode: &6Brown" to player
+  else:
+    set {godshroom.mode.%{_id}%} to "red"
+    set {_new} to red mushroom named "{@shroom.item.name}"
+    set lore of {_new} to {_lore::*}
+    set amount of {_new} to {_amt}
+    set player's tool to {_new}
+    send "&6MUSHROOMS FOLLOWER &7» Mode: &cRed" to player
+
+
+# =======================================
+# RIGHT CLICK (ground) 
+# =======================================
+on right click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@shroom.item.name}":
+    stop
+  if clicked block is not set:
+    stop
+
+  set {_above} to location of clicked block
+  add 1 to y-coordinate of {_above}
+  if block at {_above} is not air:
+    send "&cNo space to place a mushroom here." to player
+    stop
+
+  set {_id} to uuid of player
+  if {godshroom.mode.%{_id}%} is not set:
+    set {godshroom.mode.%{_id}%} to "red"
+  set {_mode} to {godshroom.mode.%{_id}%}
+
+  if {_mode} is "red":
+    set block at {_above} to red mushroom
+    send "&6MUSHROOMS FOLLOWER &7» Placed a &cRed &7mushroom." to player
+  else:
+    set block at {_above} to brown mushroom
+    send "&6MUSHROOMS FOLLOWER &7» Placed a &6Brown &7mushroom." to player
+
+
+# ===========================
+# On hit (melee) effects — separate RED/BROWN cooldowns
+# ===========================
+on damage:
+  if attacker is not a player:
+    stop
+  if victim is not a player:
+    stop
+
+  set {_tool} to tool of attacker
+  if {_tool} is not set:
+    stop
+  if name of {_tool} is not "{@shroom.item.name}":
+    stop
+
+  set {_id} to uuid of attacker
+  if {godshroom.mode.%{_id}%} is not set:
+    set {godshroom.mode.%{_id}%} to "red"
+  set {_mode} to {godshroom.mode.%{_id}%}
+
+  set {_now} to now
+
+  if {_mode} is "red":
+    # ----- RED mode cooldown -----
+    set {_last} to {godshroom.last.hit.red.%{_id}%}
+    if {_last} is set:
+      set {_elapsed} to difference between {_now} and {_last}
+      if {_elapsed} < {@hit.cooldown.red.seconds} seconds:
+        set {_left} to {@hit.cooldown.red.seconds} seconds - {_elapsed}
+        send "&cGODS MUSHROOM &7» &cRED &7hit on cooldown. Wait &e%{_left}%&7." to attacker
+        stop
+
+    # Effects (your values)
+    apply poison 1 to victim for 5 seconds
+    apply hunger 2 to victim for 10 seconds
+    apply darkness to victim for 5 seconds # replace with blindness if needed
+
+    # mark cooldown
+    set {godshroom.last.hit.red.%{_id}%} to {_now}
+
+    send "&6GODS MUSHROOM &7» &cInflicted&7 Poison, Hunger, Darkness!" to attacker
+    stop
+
+  # ----- BROWN mode cooldown -----
+  set {_last} to {godshroom.last.hit.brown.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@hit.cooldown.brown.seconds} seconds:
+      set {_left} to {@hit.cooldown.brown.seconds} seconds - {_elapsed}
+      send "&cGODS MUSHROOM &7» &6BROWN &7hit on cooldown. Wait &e%{_left}%&7." to attacker
+      stop
+
+  # Effects (your values)
+  apply regeneration 2 to victim for 15 seconds
+  apply strength 2 to victim for 15 seconds
+  # apply instant health 1 to victim for 0.05 seconds  # if you want this too
+
+  # mark cooldown
+  set {godshroom.last.hit.brown.%{_id}%} to {_now}
+
+  send "&6GODS MUSHROOM &7» &aGranted&7 Regeneration + Strength!" to attacker
+
+
+# ===== Block vanilla placement of God's Mushroom =====
+on place:
+  set {_held} to tool of player
+  if {_held} is set:
+    if name of {_held} is "{@shroom.item.name}":
+      cancel event
+      send "&cYou cannot place &dGOD'S MUSHROOM&c." to player
+
+
+# ===============================
+# Scaling
+# ===============================
+
+# Renamed helper names to avoid collisions with other scripts
+function _followershroom_has_item(p: player) :: boolean:
+    set {_inv::*} to items in inventory of {_p}
+    loop {_inv::*}:
+        if loop-value is set:
+            if name of loop-value is "{@shroom.item.name}":
+                return true
+    return false
+
+function _followershroom_check_scale(p: player):
+    set {_id} to uuid of {_p}
+    set {_has} to _followershroom_has_item({_p})
+    if {_has} is true:
+        if {followershroom.scaled.%{_id}%} is not true:
+            execute console command "attribute %{_p}% minecraft:scale base set 0.5"
+            set {followershroom.scaled.%{_id}%} to true
+    else:
+        if {followershroom.scaled.%{_id}%} is true:
+            execute console command "attribute %{_p}% minecraft:scale base reset"
+            delete {followershroom.scaled.%{_id}%}
+
+on join:
+    _followershroom_check_scale(player)
+
+on respawn:
+    _followershroom_check_scale(player)
+
+on pickup:
+    _followershroom_check_scale(player)
+
+on drop:
+    _followershroom_check_scale(player)
+
+on inventory click:
+    wait 1 tick
+    _followershroom_check_scale(player)
+
+on swap hand items:
+    wait 1 tick
+    _followershroom_check_scale(player)
+
+on death of player:
+    delete {followershroom.scaled.%uuid of victim%}
+
+every 5 seconds:
+    loop all players:
+        _followershroom_check_scale(loop-player)

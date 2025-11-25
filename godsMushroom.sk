@@ -1,0 +1,353 @@
+# ======================================
+# GOD ITEM: Gods Mushroom
+# ======================================
+
+options:
+  shroom.item.name: &d&lGODS MUSHROOM
+  shroom.big.stem.height: 4
+  shroom.big.cap.radius: 2   # 2 → 5x5 middle layer
+  cooldown.seconds: 10 # cooldown for big schroom
+  hit.cooldown.red.seconds: 20
+  hit.cooldown.brown.seconds: 20
+
+
+# -------------------------------
+# /givegodmushroom
+# -------------------------------
+command /givegodmushroom [<player>]:
+  permission: godsitems.godmushroom.give
+  trigger:
+    set {_i} to red mushroom named "{@shroom.item.name}"
+
+    clear {_l::*}
+    add "&7A divine fungus that bends nature." to {_l::*}
+    add "" to {_l::*}
+    add "&dRIGHT CLICK (ground)&7: place small shroom" to {_l::*}
+    add "&dSNEAK + RIGHT CLICK (ground)&7: grow BIG shroom" to {_l::*}
+    add "&dHIT PLAYER&7: apply mode effects" to {_l::*}
+    add "" to {_l::*}
+    add "&dSNEAK + LEFT CLICK&7: toggle &cRed &7↔ &6Brown" to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    if arg-1 is set:
+      give {_i} to arg-1
+      set {godshroom.mode.%uuid of arg-1%} to "red"
+      send "&aGave {@shroom.item.name}&a to &e%arg-1%&a." to player
+    else:
+      give {_i} to player
+      set {godshroom.mode.%uuid of player%} to "red"
+      send "&aYou received {@shroom.item.name}&a." to player
+
+# ===========================
+# SHIFT + LEFT CLICK = toggle
+# ===========================
+on left click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@shroom.item.name}":
+    stop
+  if player is not sneaking:
+    stop
+
+  set {_id} to uuid of player
+  if {godshroom.mode.%{_id}%} is not set:
+    set {godshroom.mode.%{_id}%} to "red"
+
+  clear {_lore::*}
+  add "&7A divine fungus that bends nature." to {_lore::*}
+  add "" to {_lore::*}
+  add "&dRIGHT CLICK (ground)&7: place small shroom" to {_lore::*}
+  add "&dSNEAK + RIGHT CLICK (ground)&7: grow BIG shroom" to {_lore::*}
+  add "&dHIT PLAYER&7: apply mode effects" to {_lore::*}
+  add "" to {_lore::*}
+  add "&dSNEAK + LEFT CLICK&7: toggle &cRed &7↔ &6Brown" to {_lore::*}
+
+  set {_amt} to amount of {_held}
+
+  if {godshroom.mode.%{_id}%} is "red":
+    set {godshroom.mode.%{_id}%} to "brown"
+    set {_new} to brown mushroom named "{@shroom.item.name}"
+    set lore of {_new} to {_lore::*}
+    set amount of {_new} to {_amt}
+    set player's tool to {_new}
+    send "&6GODS MUSHROOM &7» Mode: &6Brown" to player
+  else:
+    set {godshroom.mode.%{_id}%} to "red"
+    set {_new} to red mushroom named "{@shroom.item.name}"
+    set lore of {_new} to {_lore::*}
+    set amount of {_new} to {_amt}
+    set player's tool to {_new}
+    send "&6GODS MUSHROOM &7» Mode: &cRed" to player
+
+# =======================================
+# RIGHT CLICK (ground) / SNEAK + RIGHT = BIG
+# =======================================
+on right click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@shroom.item.name}":
+    stop
+  if clicked block is not set:
+    stop
+
+  # target = 1 block above clicked block
+  set {_above} to location of clicked block
+  add 1 to y-coordinate of {_above}
+  if block at {_above} is not air:
+    send "&cNo space to place a mushroom here." to player
+    stop
+
+  set {_id} to uuid of player
+  if {godshroom.mode.%{_id}%} is not set:
+    set {godshroom.mode.%{_id}%} to "red"
+  set {_mode} to {godshroom.mode.%{_id}%}
+
+  # SNEAK = grow BIG mushroom
+  if player is sneaking:
+    # --- cooldown gate (elapsed time) for BIG growth ---
+    set {_last} to {godshroom.last.big.%{_id}%}
+    if {_last} is set:
+      set {_elapsed} to difference between now and {_last}
+      if {_elapsed} < {@cooldown.seconds} seconds:
+        set {_left} to {@cooldown.seconds} seconds - {_elapsed}
+        send "&cGODS MUSHROOM &7» BIG growth on cooldown (&f{@cooldown.seconds}s cap&7). &7Wait &e%{_left}%&7." to player
+        stop
+
+    # ---- Stem (only set on air) ----
+    set {_stem} to {_above}
+    loop {@shroom.big.stem.height} times:
+      if block at {_stem} is air:
+        set block at {_stem} to mushroom stem
+      add 1 to y-coordinate of {_stem}
+
+    # cap center just above stem top
+    set {_capCenter} to {_stem}
+    set {_capY} to y-coordinate of {_capCenter}
+
+    # cap material by mode
+    if {_mode} is "red":
+      set {_capblock} to red mushroom block
+    else:
+      set {_capblock} to brown mushroom block
+
+    set {_r} to {@shroom.big.cap.radius}
+    set {_negR} to 0 - {_r}
+
+    # ---------- Layer A: lower ring (5x5 without corners) at capY-1 ----------
+    set {_y} to {_capY} - 1
+    set {_x} to {_negR}
+    while {_x} <= {_r}:
+      set {_z} to {_negR}
+      while {_z} <= {_r}:
+        # edge flags
+        set {_isXEdge} to false
+        if {_x} = {_r}:
+          set {_isXEdge} to true
+        else if {_x} = {_negR}:
+          set {_isXEdge} to true
+
+        set {_isZEdge} to false
+        if {_z} = {_r}:
+          set {_isZEdge} to true
+        else if {_z} = {_negR}:
+          set {_isZEdge} to true
+
+        # skip only when both edges -> a corner
+        if {_isXEdge} is true:
+          if {_isZEdge} is true:
+            # corner -> skip
+          else:
+            set {_p} to {_capCenter}
+            set x-coordinate of {_p} to x-coordinate of {_capCenter} + {_x}
+            set y-coordinate of {_p} to {_y}
+            set z-coordinate of {_p} to z-coordinate of {_capCenter} + {_z}
+            if block at {_p} is air:
+              set block at {_p} to {_capblock}
+        else:
+          set {_p} to {_capCenter}
+          set x-coordinate of {_p} to x-coordinate of {_capCenter} + {_x}
+          set y-coordinate of {_p} to {_y}
+          set z-coordinate of {_p} to z-coordinate of {_capCenter} + {_z}
+          if block at {_p} is air:
+            set block at {_p} to {_capblock}
+        add 1 to {_z}
+      add 1 to {_x}
+
+    # ---------- Layer B: middle (full 5x5) at capY ----------
+    set {_x} to {_negR}
+    while {_x} <= {_r}:
+      set {_z} to {_negR}
+      while {_z} <= {_r}:
+        set {_p} to {_capCenter}
+        set x-coordinate of {_p} to x-coordinate of {_capCenter} + {_x}
+        set y-coordinate of {_p} to {_capY}
+        set z-coordinate of {_p} to z-coordinate of {_capCenter} + {_z}
+        if block at {_p} is air:
+          set block at {_p} to {_capblock}
+        add 1 to {_z}
+      add 1 to {_x}
+
+    # ---------- Layer C: top (3x3) at capY+1 ----------
+    set {_y} to {_capY} + 1
+    set {_x} to -1
+    while {_x} <= 1:
+      set {_z} to -1
+      while {_z} <= 1:
+        set {_p} to {_capCenter}
+        set x-coordinate of {_p} to x-coordinate of {_capCenter} + {_x}
+        set y-coordinate of {_p} to {_y}
+        set z-coordinate of {_p} to z-coordinate of {_capCenter} + {_z}
+        if block at {_p} is air:
+          set block at {_p} to {_capblock}
+        add 1 to {_z}
+      add 1 to {_x}
+
+    # --- mark last use after success ---
+    set {godshroom.last.big.%{_id}%} to now
+    send "&6GODS MUSHROOM &7» Grew a BIG %{_mode}% mushroom!" to player
+    stop
+
+  # normal RIGHT CLICK => small mushroom (only set on air; already validated above)
+  if {_mode} is "red":
+    set block at {_above} to red mushroom
+    send "&6GODS MUSHROOM &7» Placed a &cRed &7mushroom." to player
+  else:
+    set block at {_above} to brown mushroom
+    send "&6GODS MUSHROOM &7» Placed a &6Brown &7mushroom." to player
+
+
+# ===========================
+# On hit (melee) effects — separate RED/BROWN cooldowns
+# ===========================
+on damage:
+  if attacker is not a player:
+    stop
+  if victim is not a player:
+    stop
+
+  set {_tool} to tool of attacker
+  if {_tool} is not set:
+    stop
+  if name of {_tool} is not "{@shroom.item.name}":
+    stop
+
+  set {_id} to uuid of attacker
+  if {godshroom.mode.%{_id}%} is not set:
+    set {godshroom.mode.%{_id}%} to "red"
+  set {_mode} to {godshroom.mode.%{_id}%}
+
+  set {_now} to now
+
+  if {_mode} is "red":
+    # ----- RED mode cooldown -----
+    set {_last} to {godshroom.last.hit.red.%{_id}%}
+    if {_last} is set:
+      set {_elapsed} to difference between {_now} and {_last}
+      if {_elapsed} < {@hit.cooldown.red.seconds} seconds:
+        set {_left} to {@hit.cooldown.red.seconds} seconds - {_elapsed}
+        send "&cGODS MUSHROOM &7» &cRED &7hit on cooldown. Wait &e%{_left}%&7." to attacker
+        stop
+
+    # Effects (your values)
+    apply poison 1 to victim for 15 seconds
+    apply hunger 2 to victim for 20 seconds
+    apply darkness to victim for 15 seconds # replace with blindness if needed
+
+
+    # mark cooldown
+    set {godshroom.last.hit.red.%{_id}%} to {_now}
+
+    send "&6GODS MUSHROOM &7» &cInflicted&7 Poison, Hunger, Darkness!" to attacker
+    stop
+
+  # ----- BROWN mode cooldown -----
+  set {_last} to {godshroom.last.hit.brown.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@hit.cooldown.brown.seconds} seconds:
+      set {_left} to {@hit.cooldown.brown.seconds} seconds - {_elapsed}
+      send "&cGODS MUSHROOM &7» &6BROWN &7hit on cooldown. Wait &e%{_left}%&7." to attacker
+      stop
+
+  # Effects (your values)
+  apply regeneration 2 to victim for 30 seconds
+  apply strength 2 to victim for 30 seconds
+  # apply instant health 1 to victim for 0.05 seconds  # if you want this too
+
+
+  # mark cooldown
+  set {godshroom.last.hit.brown.%{_id}%} to {_now}
+
+  send "&6GODS MUSHROOM &7» &aGranted&7 Regeneration + Strength!" to attacker
+
+
+
+# ===== Block vanilla placement of God's Mushroom =====
+on place:
+  set {_held} to tool of player
+  if {_held} is set:
+    if name of {_held} is "{@shroom.item.name}":
+      cancel event
+      send "&cYou cannot place &dGOD'S MUSHROOM&c." to player
+
+
+
+
+# ===============================
+# Scaling
+# ===============================
+
+function _godshroom_has_item(p: player) :: boolean:
+    set {_inv::*} to items in inventory of {_p}
+    loop {_inv::*}:
+        if loop-value is set:
+            if name of loop-value is "{@shroom.item.name}":
+                return true
+    return false
+
+function _godshroom_check_scale(p: player):
+    set {_id} to uuid of {_p}
+    set {_has} to _godshroom_has_item({_p})
+    if {_has} is true:
+        if {godshroom.scaled.%{_id}%} is not true:
+            # make {_p} execute command "attribute @s minecraft:scale base set 0.5"
+            execute console command "attribute %{_p}% minecraft:scale base set 0.5"
+            set {godshroom.scaled.%{_id}%} to true
+    else:
+        if {godshroom.scaled.%{_id}%} is true:
+            # make {_p} execute command "attribute @s minecraft:scale base reset"
+            execute console command "attribute %{_p}% minecraft:scale base reset"
+            delete {godshroom.scaled.%{_id}%}
+
+on join:
+    _godshroom_check_scale(player)
+
+on respawn:
+    _godshroom_check_scale(player)
+
+on pickup:
+    _godshroom_check_scale(player)
+
+on drop:
+    _godshroom_check_scale(player)
+
+on inventory click:
+    wait 1 tick
+    _godshroom_check_scale(player)
+
+on swap hand items:
+    wait 1 tick
+    _godshroom_check_scale(player)
+
+on death of player:
+    delete {godshroom.scaled.%uuid of victim%}
+
+every 5 seconds:
+    loop all players:
+        _godshroom_check_scale(loop-player)
+
+
+
+
