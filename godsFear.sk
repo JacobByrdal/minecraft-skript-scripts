@@ -1,0 +1,125 @@
+# ======================================
+# GOD ITEM: Gods Fear (Mace)
+# ======================================
+
+options:
+  godfear.item.name: &d&lGODS FEAR
+  godfear.hit.slow.seconds: 5
+  godfear.hit.darkness.seconds: 12
+  godfear.hit.stun.seconds: 2          # short "root" via jump+slowness
+  godfear.hit.cooldown.seconds: 8      # per-attacker cooldown
+  godfear.launch.power: 2.0            # how high the attacker is launched
+  godfear.bonus.damage: 6              # extra damage on the hit (in half-hearts → 6 = 3 hearts)
+  godfear.nofall.seconds: 6            # how long attacker is protected from fall damage
+
+# --------------------------------------
+# /givegodfear
+# --------------------------------------
+command /givegodfear [<player>]:
+  permission: godsitems.godfear.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    # Make it a netherite axe as the "mace" – change if you want
+    set {_item} to minecraft:mace named "{@godfear.item.name}"
+
+    clear {_lore::*}
+    add "&7A crushing relic of divine terror." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dHIT PLAYER&7:" to {_lore::*}
+    add "&7• Stuns, slows & blinds them in darkness." to {_lore::*}
+    add "&7• Sends you skyward to strike with &d&lGODLY POWER&7." to {_lore::*}
+    add "" to {_lore::*}
+    add "&d&lDETAILS:" to {_lore::*}
+    add "&7Hit Cooldown: &e{@godfear.hit.cooldown.seconds}s" to {_lore::*}
+    add "&7Bonus Damage: &e+{@godfear.bonus.damage} half-hearts" to {_lore::*}
+    add "&7No-Fall Window: &e{@godfear.nofall.seconds}s after launch" to {_lore::*}
+    add "" to {_lore::*}
+    add "&8&oBE FEARED BY GOD'S POWERS" to {_lore::*}
+    set lore of {_item} to {_lore::*}
+
+    give {_item} to {_p}
+    send "&aYou have been granted &dGODS FEAR&a." to {_p}
+    if {_p} is not player:
+      send "&aGave &dGODS FEAR &ato &e%{_p}%&a." to player
+
+
+# ======================================
+# On hit: stun/slow/darkness + launch attacker + bonus damage
+# ======================================
+on damage:
+  if attacker is not a player:
+    stop
+  if victim is not a player:
+    stop
+
+  set {_tool} to tool of attacker
+  if {_tool} is not set:
+    stop
+  if name of {_tool} is not "{@godfear.item.name}":
+    stop
+
+  # --- cooldown per attacker ---
+  set {_id} to uuid of attacker
+  set {_now} to now
+
+  set {_last} to {godfear.last.hit.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@godfear.hit.cooldown.seconds} seconds:
+      set {_left} to {@godfear.hit.cooldown.seconds} seconds - {_elapsed}
+      send "&cGODS FEAR &7» Still on cooldown. Wait &e%{_left}%&7." to attacker
+      stop
+
+  # --------- EFFECTS ON VICTIM (stun + slow + warden darkness) ---------
+
+  # Heavy slowness – they basically can't move
+  apply slowness 255 to victim for {@godfear.hit.slow.seconds} seconds
+
+  # Tiny jump strength to help root them (no jumping away)
+  apply jump boost 250 to victim for {@godfear.hit.stun.seconds} seconds
+
+  # Warden darkness effect (replace with blindness if your server uses that)
+  apply darkness to victim for {@godfear.hit.darkness.seconds} seconds
+
+  # Title: "BE FEARED BY GODS POWERS"
+  # If your Skript doesn't support 'send title', replace this line with a console /title command.
+  send title "&5&lBE FEARED BY GODS POWERS" to victim for 80 ticks
+
+  # --------- BONUS DAMAGE ON THIS HIT ---------
+  set {_base} to damage
+  set damage to {_base} + {@godfear.bonus.damage}
+
+  # --------- LAUNCH ATTACKER UPWARDS ---------
+  push attacker upwards with speed {@godfear.launch.power}
+
+  # mark last use + open no-fall window
+  set {godfear.last.hit.%{_id}%} to {_now}
+  set {godfear.last.launch.%{_id}%} to {_now}
+
+  send "&5GODS FEAR &7» &cYou crush your foe and leap with divine power!" to attacker
+  send "&4GODS FEAR &7» &cYou are struck by a godly mace!" to victim
+
+
+# ======================================
+# No fall damage shortly after a Gods Fear launch
+# ======================================
+on damage of player:
+  if damage cause is not fall:
+    stop
+
+  set {_p} to victim
+  set {_id} to uuid of {_p}
+
+  set {_lastLaunch} to {godfear.last.launch.%{_id}%}
+  if {_lastLaunch} is not set:
+    stop
+
+  set {_elapsed} to difference between now and {_lastLaunch}
+  if {_elapsed} <= {@godfear.nofall.seconds} seconds:
+    cancel event
+    # Optional message (comment out if spammy)
+    # send "&7GODS FEAR &7» &aYour divine leap negates fall damage." to {_p}
