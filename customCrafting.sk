@@ -1,0 +1,389 @@
+# ======================================
+# CUSTOM CRAFTING
+# ======================================
+
+options:
+    gglut.item.name: &6&lGOLDEN GLUTTONY
+
+
+
+#on load:
+   #remove recipe "custom:uncooked_enchanted_golden_carrot"
+   #remove recipe "custom:gg_stage1_slight"
+   #remove recipe "custom:gg_stage2_gluttony"
+   #remove recipe "custom:gg_stage3_burnt"
+   #remove recipe "custom:golden_gluttony_blast"
+
+
+
+on load:
+
+    # ============================
+    # UNCOOKED FOUL STENCH ingredient
+    # ============================
+    set {_stench} to glow lichen
+    set name of {_stench} to "&5&lFoul Stench"
+
+    clear {_sLore::*}
+    add "&7A disgusting, rotting mass of abyssal slime." to {_sLore::*}
+    add "&7The smell clings to your hands." to {_sLore::*}
+    add "" to {_sLore::*}
+    add "&8Use this to craft some bait" to {_sLore::*}
+    set lore of {_stench} to {_sLore::*}
+
+    # ----- build LEVIATHAN BAIT result -----
+    set {_bait} to chorus fruit
+    set name of {_bait} to "&d&lLeviathan Bait"
+
+    clear {_bLore::*}
+    add "&7Strange bait dripping with abyssal energy." to {_bLore::*}
+    add "&7Keep this in your inventory when casting" to {_bLore::*}
+    add "&7to lure something from the deep..." to {_bLore::*}
+    set lore of {_bait} to {_bLore::*}
+
+    register shapeless recipe:
+        id: "leviathan:bait"
+        result: {_bait}
+        group: "leviathan"
+        category: "misc"
+        ingredients:
+            add {_stench} to ingredients
+            add chorus fruit to ingredients
+
+
+
+    # ============================
+    # STAGE 1: UNCOOKED ENCHANTED GOLDEN CARROT
+    # ============================
+
+    set {_uncooked} to golden carrot
+    set name of {_uncooked} to "&bUncooked Enchanted Carrot"
+
+    clear {_uLore::*}
+    add "&7A raw, unstable magical delicacy." to {_uLore::*}
+    add "&7Needs to be cooked to perfection before consumption." to {_uLore::*}
+    set lore of {_uncooked} to {_uLore::*}
+
+    register shaped recipe:
+        id: "custom:uncooked_enchanted_golden_carrot"
+        result: {_uncooked}
+        shape: "aaa", "aba", "aaa"
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to enchanted golden apple
+            set ingredient of "b" to golden carrot
+
+
+
+    # ============================
+    # STAGE 2: SLIGHTLY COOKED ENCHANTED CARROT
+    # ============================
+
+    set {_slight} to golden carrot
+    set name of {_slight} to "&6Slightly Cooked Enchanted Carrot"
+
+    clear {_sCookLore::*}
+    add "&7Gently warmed by abyssal flames." to {_sCookLore::*}
+    add "&7Almost ready… but not quite." to {_sCookLore::*}
+    set lore of {_slight} to {_sCookLore::*}
+
+    # Uncooked -> Slightly Cooked
+    register new blast furnace recipe for {_slight} using {_uncooked} with id "custom:gg_stage1_slight" and with experience 0 and with cook time 20 seconds in group "custom"
+
+
+
+    # ============================
+    # STAGE 3: GOLDEN GLUTTONY (FINAL FOOD ITEM)
+    # ============================
+
+    set {_gg} to golden carrot
+    set name of {_gg} to "{@gglut.item.name}"
+
+    clear {_glore::*}
+    add "&7An endlessly decadent golden feast." to {_glore::*}
+    add "" to {_glore::*}
+    add "&dRIGHT CLICK&7: Instantly fill hunger + saturation" to {_glore::*}
+    add "&7The glutton's blessing never runs dry." to {_glore::*}
+    add "&7Keep eating till you die." to {_glore::*}
+    set lore of {_gg} to {_glore::*}
+
+    # Slightly Cooked -> GOLDEN GLUTTONY
+    register new blast furnace recipe for {_gg} using {_slight} with id "custom:gg_stage2_gluttony" and with experience 0 and with cook time 240 seconds in group "custom"
+
+
+
+    # ============================
+    # STAGE 4: BURNED CARROT (FINAL STAGE)
+    # ============================
+
+    set {_burnt} to charcoal
+    set name of {_burnt} to "&8&lBurned Carrot"
+
+    clear {_burnLore::*}
+    add "&cCooked way past salvation." to {_burnLore::*}
+    add "&8The price of endless gluttony." to {_burnLore::*}
+    set lore of {_burnt} to {_burnLore::*}
+
+    # GOLDEN GLUTTONY -> Burned Carrot
+    register new blast furnace recipe for {_burnt} using {_gg} with id "custom:gg_stage3_burnt" and with experience 0 and with cook time 1 seconds in group "custom"
+
+
+
+    # ============================
+    # ENDER PEARL → ENCHANTED → HEAVY
+    # ============================
+
+    # ----- INFUSED ENDER PEARL (9 normal pearls) -----
+    set {_infused} to ender pearl item
+    set name of {_infused} to "&5&lInfused Ender Pearl"
+
+    clear {_iLore::*}
+    add "&7A pearl lightly charged with ender energy." to {_iLore::*}
+    add "&7Crafted from &b9 &7ordinary ender pearls." to {_iLore::*}
+    set lore of {_infused} to {_iLore::*}
+
+    # 3x3 = 9 pearls
+    register shaped recipe:
+        id: "custom:infused_ender_pearl"
+        result: {_infused}
+        shape: "aaa", "aaa", "aaa"
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to ender pearl item
+
+
+    # ----- COMPRESSED ENDER PEARL (9 infused = 81 pearls) -----
+    set {_compressed} to ender pearl item
+    set name of {_compressed} to "&5&lCompressed Ender Pearl"
+
+    clear {_cLore::*}
+    add "&7A tightly packed cluster of ender energy." to {_cLore::*}
+    add "&7Crafted from &b9 &5Infused Ender Pearls&7." to {_cLore::*}
+    add "&8(&7= &b81 &7ordinary ender pearls&8)" to {_cLore::*}
+    set lore of {_compressed} to {_cLore::*}
+
+    # 3x3 = 9 infused = 81 pearls
+    register shaped recipe:
+        id: "custom:compressed_ender_pearl"
+        result: {_compressed}
+        shape: "aaa", "aaa", "aaa"
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to {_infused}
+
+
+    # ----- ENCHANTED ENDER PEARL (9 compressed = 729 pearls) -----
+    set {_epearl} to ender pearl item
+    set name of {_epearl} to "&5&lEnchanted Ender Pearl"
+
+    clear {_eLore::*}
+    add "&7A pearl humming with condensed ender energy." to {_eLore::*}
+    add "&7Crafted from &b9 &5Compressed Ender Pearls&7." to {_eLore::*}
+    add "&8(&7= &b729 &7ordinary ender pearls&8)" to {_eLore::*}
+    set lore of {_epearl} to {_eLore::*}
+
+    # 3x3 = 9 compressed = 9 * 81 = 729 pearls
+    register shaped recipe:
+        id: "custom:enchanted_ender_pearl"
+        result: {_epearl}
+        shape: "aaa", "aaa", "aaa"
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to {_compressed}
+
+
+    # ----- DENSE ENCHANTED PEARL (9 enchanted = 6,561 pearls) -----
+    set {_dense} to ender pearl item
+    set name of {_dense} to "&5&lDense Enchanted Ender Pearl"
+
+    clear {_dLore::*}
+    add "&7A highly compacted enchanted pearl." to {_dLore::*}
+    add "&7Crafted from &b9 &5Enchanted Ender Pearls&7." to {_dLore::*}
+    add "&8(&7= &b6561 &7ordinary ender pearls&8)" to {_dLore::*}
+    set lore of {_dense} to {_dLore::*}
+
+    # 3x3 = 9 enchanted = 9 * 729 = 6,561 pearls
+    register shaped recipe:
+        id: "custom:dense_enchanted_ender_pearl"
+        result: {_dense}
+        shape: "aaa", "aaa", "aaa"
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to {_epearl}
+
+
+    # ----- ULTRA ENCHANTED PEARL (9 dense = 59,049 pearls) -----
+    set {_ultra} to ender pearl item
+    set name of {_ultra} to "&5&lUltra Enchanted Ender Pearl"
+
+    clear {_uLore2::*}
+    add "&7A core of unimaginable ender pressure." to {_uLore2::*}
+    add "&7Crafted from &b9 &5Dense Enchanted Ender Pearls&7." to {_uLore2::*}
+    add "&8(&7= &b59049 &7ordinary ender pearls&8)" to {_uLore2::*}
+    set lore of {_ultra} to {_uLore2::*}
+
+    # 3x3 = 9 dense = 9 * 6,561 = 59,049 pearls
+    register shaped recipe:
+        id: "custom:ultra_enchanted_ender_pearl"
+        result: {_ultra}
+        shape: "aaa", "aaa", "aaa"
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to {_dense}
+
+
+    # ----- HEAVY ENDER PEARL (4 ultra = 236,196 pearls) -----
+    set {_heavy} to ender pearl item
+    set name of {_heavy} to "&4&lHeavy Ender Pearl"
+
+    clear {_hLore::*}
+    add "&7A pearl so heavy with power it distorts space around it." to {_hLore::*}
+    add "&7Crafted from &b4 &5Ultra Enchanted Ender Pearls&7." to {_hLore::*}
+    add "&8(&7= &b236196 &7ordinary ender pearls&8)" to {_hLore::*}
+    set lore of {_heavy} to {_hLore::*}
+
+    # Plus-shape = 4 ultra = 4 * 59,049 = 236,196 pearls
+    register shaped recipe:
+        id: "custom:heavy_ender_pearl"
+        result: {_heavy}
+        shape: " a ", "a a", " a "
+        group: "custom"
+        category: "misc"
+        ingredients:
+            set ingredient of "a" to {_ultra}
+
+
+
+    # ============================
+    # ASPECT OF THE END CRAFTING
+    # ============================
+
+    # --- VOID'S HEART INGREDIENT ---
+    if {voidHeart.item} is set:
+        set {_voidHeart} to {voidHeart.item}
+    else:
+        # Temporary fallback (only until someone gets one)
+        set {_voidHeart} to player head
+        set name of {_voidHeart} to "&d&lVoid's Heart"
+
+        clear {_vhLore::*}
+        add "&7A condensed fragment of the void." to {_vhLore::*}
+        add "&7It pulses faintly with Ender energy." to {_vhLore::*}
+        add "" to {_vhLore::*}
+        add "&dDropped rarely from &5Endermen&d." to {_vhLore::*}
+        set lore of {_voidHeart} to {_vhLore::*}
+
+
+    set {_aoteItem} to diamond sword
+    set name of {_aoteItem} to "&b&lASPECT OF THE END"
+
+    clear {_aoteLore::*}
+    add "&7A blade infused with void energy." to {_aoteLore::*}
+    add "" to {_aoteLore::*}
+    add "&bRIGHT CLICK&7: Teleport &b10&7 blocks in" to {_aoteLore::*}
+    add "&7the direction you are facing." to {_aoteLore::*}
+    add "" to {_aoteLore::*}
+    add "&d&lABILITY: INSTANT TRANSMISSION" to {_aoteLore::*}
+    add "&7Cooldown: &e0s" to {_aoteLore::*}
+    set lore of {_aoteItem} to {_aoteLore::*}
+
+
+    register shaped recipe:
+        id: "custom:aspect_of_the_end"
+        result: {_aoteItem}
+        shape: " a ", " a ", " b "
+        group: "custom"
+        category: "equipment"
+        ingredients:
+            set ingredient of "a" to {_heavy}      # Heavy Ender Pearl
+            set ingredient of "b" to {_voidHeart}  # REAL Void’s Heart (14 components)
+
+
+
+
+
+# ============================================
+# BLAST FURNACES – LAVA BUCKET REQUIRED FOR UNCOOKED CARROT
+# ============================================
+
+on fuel burn:
+    if event-block is not blast furnace:
+        stop
+
+    # Check what's in the input slot (0)
+    set {_in} to slot 0 of event-block
+
+    if {_in} is not golden carrot:
+        stop
+    if name of {_in} is not "&bUncooked Enchanted Carrot":
+        stop
+
+    # If the fuel being burned isn't a lava bucket, cancel it
+    if burned fuel is not lava bucket:
+        cancel event
+
+
+
+# ============================================
+# AUTO-CHAIN COOKING IN BLAST FURNACE
+# ============================================
+
+on furnace smelt:
+    if event-block is not blast furnace:
+        stop
+
+    set {_res} to smelted item
+
+    # If the result is one of the chain stages (except burned),
+    # put it back into the input slot so it cooks again.
+    if name of {_res} is "&bUncooked Enchanted Carrot" or "&6Slightly Cooked Enchanted Carrot" or "{@gglut.item.name}":
+        wait 1 tick
+        set slot 0 of event-block to slot 2 of event-block
+        clear slot 2 of event-block
+
+
+
+
+
+
+
+# ======================================
+# COMMAND TO DELETE / UNREGISTER RECIPES
+# ======================================
+
+command /removerecipes:
+    permission: godsitems.goldengluttony.removerecipes
+    permission message: "&cYou don't have permission to do that."
+    trigger:
+        remove recipe "custom:uncooked_enchanted_golden_carrot"
+        remove recipe "custom:gg_stage1_slight"
+        remove recipe "custom:gg_stage2_gluttony"
+        remove recipe "custom:gg_stage3_burnt"
+        remove recipe "custom:golden_gluttony_blast"
+        remove recipe "custom:infused_ender_pearl"
+        remove recipe "custom:compressed_ender_pearl"
+        remove recipe "custom:enchanted_ender_pearl"
+        remove recipe "custom:dense_enchanted_ender_pearl"
+        remove recipe "custom:ultra_enchanted_ender_pearl"
+        remove recipe "custom:heavy_ender_pearl"
+        send "&aAll recipes have been removed." to sender
+
+
+
+
+command /removeaotvrecipeeeeee:
+    permission: godsitems.aote.removerecipe
+    permission message: "&cYou don't have permission to do that."
+    trigger:
+        remove recipe "custom:aspect_of_the_end"
+        send "&aAspect of the End recipe has been removed." to sender
+
+
+
+
