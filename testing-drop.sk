@@ -177,7 +177,7 @@ on death of allay:
     broadcast "&b✨ %attacker% obtained the one-time &d&lGods Clock&b from an &9Allay&b!"
 
 # ======================
-# --- One-time Dragon's Heart drop from ENDER DRAGON ---
+# --- One-time Dragon's Heart drop from ENDER DRAGON'---ff
 # ======================
 on death of ender dragon:
   attacker is a player

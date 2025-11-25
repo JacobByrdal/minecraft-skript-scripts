@@ -6,7 +6,6 @@ options:
   gxc.out_msg_cooldown: 2        # seconds between "Out of arrows" messages
   gxc.infinite_ammo: false       # set to true for infinite arrows
 
-# no variable declarations needed; Skript will create them when set
 
 command /givegodscrossbow [<player>]:
   permission: godsitems.crossbow.give
@@ -27,7 +26,7 @@ command /givegodscrossbow [<player>]:
 
 # start firing when right-clicking with the crossbow
 on right click with crossbow:
-  if name of player's tool is not "&d&lGods Crossbow":
+  if name of player's tool is not "&d&lGods Crossbow": #'
     stop
   if {gxc.active.%player%} is true:
     stop
@@ -37,7 +36,7 @@ on right click with crossbow:
 
   while {gxc.active.%player%} is true:
     # stop if not still holding, sneaking, or dead
-    if name of player's tool is not "&d&lGods Crossbow":
+    if name of player's tool is not "&d&lGods Crossbow": #'
       set {gxc.active.%player%} to false
       stop loop
     if player is sneaking:
@@ -51,7 +50,7 @@ on right click with crossbow:
     set {_canShoot} to {@gxc.infinite_ammo}
     if {_canShoot} is false:
       if player has 1 of arrow:
-        remove 1 of arrow from player's inventory
+        remove 1 of arrow from player's inventory #'
         set {_canShoot} to true
       else:
         if {gxc.lastOutMsg.%player%} is not set:

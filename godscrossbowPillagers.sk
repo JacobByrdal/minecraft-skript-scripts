@@ -199,13 +199,13 @@ command /tpgodscrossbowraid:
       send "&cThere is currently no active Gods Crossbow raid." to player
       stop
 
-    # Optional safety: make sure it's still a living entity
+    # Make sure there is a stored boss
     if {gxc.raidBoss} is not a living entity:
       send "&cThe raid boss is no longer alive." to player
       delete {gxc.raidBoss}
       stop
 
-    # Teleport the executor to the boss
+    # Teleport to the boss
     teleport player to location of {gxc.raidBoss}
     send "&a✔ Teleported to &dGods Crossbow Weilder&a!" to player
 
@@ -241,7 +241,7 @@ command /killgodscrossbowraid:
 
     # --- FALLBACK: use a random player to load possible raid chunks ---
 
-    # No one online? Then we really can't do anything
+    # No one online? Then we really can't do anything'
     if number of all players <= 0:
       send "&cNo active Gods Crossbow raid was found (no players online to scan chunks)." to executor
       stop

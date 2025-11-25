@@ -284,7 +284,7 @@ on damage:
 
 
 
-# ===== Block vanilla placement of God's Mushroom =====
+# ===== Block vanilla placement of God's Mushroom' =====
 on place:
   set {_held} to tool of player
   if {_held} is set:
