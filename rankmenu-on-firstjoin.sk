@@ -1,0 +1,15 @@
+# Give a flag permission and open menu on FIRST join
+on first join:
+    if player has permission "group.owner": # <-- skip Owners
+        stop
+    execute console command "lp user %player% permission set rank.choose true"
+    wait 5 ticks
+    execute console command "dm open rankselector_menu %player%"
+
+# If they didn't choose last time, open again on next join
+on join:
+    if player has permission "group.owner": # <-- skip Owners
+        stop
+    if player has permission "rank.choose":
+        wait 5 ticks
+        execute console command "dm open rankselector_menu %player%"
