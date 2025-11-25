@@ -1,0 +1,65 @@
+# === GODS ITEM: God Clock ===
+# Right-click = set Night
+# Shift + Right-click = set Day
+
+options:
+  godclock.cooldown: 10 # seconds
+
+variables:
+  {godclock.last.%player%} = none
+
+command /givegodclock [<player>]:
+  permission: godsitems.clock.give
+  trigger:
+    set {_i} to clock named "&d&lGods Clock"
+
+    # Lore (original style but updated to right=Night, shift=Day)
+    clear {_l::*}
+    add "&7A sacred relic that bends the flow of time." to {_l::*}
+    add "&7Right-click: &eSet Day" to {_l::*}
+    add "&7Shift Right-click: &9Set Night" to {_l::*}
+    add "&8Cooldown: {@godclock.cooldown}s" to {_l::*}
+    add "" to {_l::*}
+    add "&7Forged by forgotten gods, it commands the" to {_l::*}
+    add "&7rising dawn and falling dusk." to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    if arg-1 is set:
+      give {_i} to arg-1
+      send "&aGave &6Gods Clock &ato &e%arg-1%&a."
+    else:
+      give {_i} to player
+      send "&aYou received a &6Gods Clock&a."
+
+on right click with clock:
+  if name of player's tool is not "&d&lGods Clock":
+    stop
+
+  set {_w} to player's world
+  if "%environment of {_w}%" is not "normal":
+    send "&cThe Gods Clock only works in the Overworld." to player
+    stop
+
+  # Cooldown
+  if {godclock.last.%player%} is set:
+    set {_elapsed} to difference between now and {godclock.last.%player%}
+    if {_elapsed} < {@godclock.cooldown} seconds:
+      set {_left} to {@godclock.cooldown} seconds - {_elapsed}
+      send "&cGod Clock is recharging! &7(%{_left}% left)" to player
+      stop
+  set {godclock.last.%player%} to now
+
+  # Switched behavior
+  if player is sneaking:
+    # SHIFT → Night
+    set time of {_w} to 19:00
+    broadcast "%player% &6wields the &d&lGods Clock&6 -> &9Night&6 descends."
+  else:
+    # RIGHT CLICK → Day
+    set time of {_w} to 06:00
+    broadcast "%player% &6wields the &d&lGods Clock&6 -> &eDay&6 is restored."
+
+command /checktime:
+  trigger:
+    set {_t} to time of player's world
+    send "&7World time: &e%{_t}%"

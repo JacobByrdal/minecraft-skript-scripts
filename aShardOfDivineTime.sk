@@ -1,0 +1,70 @@
+# === GODS ITEM: A Shard of Divine Time ===
+# Right-click to toggle between day and night depending on current time.
+options:
+  divinetime.cooldown: 30 # seconds
+
+variables:
+  {divinetime.last.%player%} = none
+
+# Use <text> for widest Skript compatibility. We'll parse it into a player.
+command /givedivinetime [<text>]:
+  permission: divinetimeitems.clock.give
+  trigger:
+    set {_i} to clock named "&d&lA Shard of Divine Time"
+
+    clear {_l::*}
+    add "&7A fragment of crystallized celestial power." to {_l::*}
+    add "&7Right-click: toggle &eDay &7↔ &9Night" to {_l::*}
+    add "&8Cooldown: {@divinetime.cooldown}s" to {_l::*}
+    add "" to {_l::*}
+    add "&7When used between &e18:00 &7and &e04:59&7 → becomes &eDay&7." to {_l::*}
+    add "&7When used between &e05:00 &7and &e17:59&7 → becomes &9Night&7." to {_l::*}
+    add "" to {_l::*}
+    add "&7Use &e/checktime &7to view the current world time." to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    # If an argument was provided, try to give it to that player and stop
+    if arg-1 is set:
+      set {_p} to arg-1 parsed as player
+      if {_p} is set:
+        give {_i} to {_p}
+        send "&aGave &6A Shard of Divine Time &ato &e%{_p}%&a."
+      else:
+        send "&cPlayer '&f%arg-1%&c' not found or not online."
+      stop
+
+    # Default: give to the executor
+    give {_i} to player
+    send "&aYou received &6A Shard of Divine Time&a."
+
+on right click with clock:
+  if name of player's tool is not "&d&lA Shard of Divine Time":
+    stop
+
+  set {_w} to player's world
+  if "%environment of {_w}%" is not "normal":
+    send "&cA Shard of Divine Time only works in the Overworld." to player
+    stop
+
+  # Cooldown
+  if {divinetime.last.%player%} is set:
+    set {_elapsed} to difference between now and {divinetime.last.%player%}
+    if {_elapsed} < {@divinetime.cooldown} seconds:
+      set {_left} to {@divinetime.cooldown} seconds - {_elapsed}
+      send "&cA Shard of Divine Time is recharging! &7(%{_left}% left)" to player
+      stop
+  set {divinetime.last.%player%} to now
+
+  # Toggle based on current time
+  set {_time} to time of {_w}
+  # Day: 18:00–23:59 and 00:00–04:59 | Night: 05:00–17:59
+  if {_time} < 05:00:
+    execute console command "time set day"
+    broadcast "%player% &6used &d&lA Shard of Divine Time&6 → set &eDay&6."
+  else:
+    if {_time} < 18:00:
+      execute console command "time set night"
+      broadcast "%player% &6used &d&lA Shard of Divine Time&6 → set &9Night&6."
+    else:
+      execute console command "time set day"
+      broadcast "%player% &6used &d&lA Shard of Divine Time&6 → set &eDay&6."
