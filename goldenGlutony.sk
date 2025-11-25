@@ -1,0 +1,74 @@
+# ======================================
+# GOD ITEM: Golden Gluttony
+# ======================================
+
+options:
+  gglut.item.name: &6&lGOLDEN GLUTTONY
+  gglut.cooldown.seconds: 2
+
+# -------------------------------
+# /givegoldengluttony
+# -------------------------------
+command /givegoldengluttony [<player>]:
+  permission: godsitems.goldengluttony.give
+  trigger:
+    set {_i} to golden carrot named "{@gglut.item.name}"
+
+    clear {_l::*}
+    add "&7An endlessly decadent golden feast." to {_l::*}
+    add "" to {_l::*}
+    add "&dRIGHT CLICK&7: Instantly fill hunger + saturation" to {_l::*}
+    add "&7The glutton's blessing never runs dry." to {_l::*}
+    add "" to {_l::*}
+    add "&7Keep eating till you die." to {_l::*}
+    set lore of {_i} to {_l::*}
+
+
+    if arg-1 is set:
+      give {_i} to arg-1
+      send "&aGave {@gglut.item.name}&a to &e%arg-1%&a." to player
+    else:
+      give {_i} to player
+      send "&aYou received {@gglut.item.name}&a." to player
+
+
+# =======================================
+# RIGHT CLICK = Eat (Infinite, Full Hunger & Saturation)
+# =======================================
+on right click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@gglut.item.name}":
+    stop
+
+  set {_id} to uuid of player
+  set {_now} to now
+
+  # --- cooldown to prevent spam ---
+  set {_last} to {gglut.last.eat.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@gglut.cooldown.seconds} seconds:
+      set {_left} to {@gglut.cooldown.seconds} seconds - {_elapsed}
+      send "&6GOLDEN GLUTTONY &7» &cYou must wait &e%{_left}% &cbefore feasting again." to player
+      cancel event
+      stop
+
+  # mark cooldown
+  set {gglut.last.eat.%{_id}%} to {_now}
+
+  # make it effectively infinite: cancel normal eat + restore the item
+  cancel event
+
+  # restore hunger & saturation to full
+  set food level of player to 20
+  set saturation of player to 20
+
+  # (Optional) nice feedback messages/effects
+  send "&6GOLDEN GLUTTONY &7» &aYour hunger and saturation are fully restored!" to player
+  play sound "ENTITY_PLAYER_BURP" to player
+
+
+
+
