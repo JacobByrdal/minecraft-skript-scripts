@@ -1,0 +1,1195 @@
+# === One-file script for both drops ===
+
+variables:
+  {snowmandiamond.dropped} = false
+  {snowmandiamond.player} = "" # who obtained it
+
+  {yellowwool.dropped} = false
+  {yellowwool.player} = "" # who obtained it
+
+  {godclock.dropped} = false
+  {godclock.player} = ""  # who obtained it
+
+  {godmoss.dropped} = false
+  {godmoss.player} = ""  # who obtained it
+
+  {dragonheart.dropped} = false
+  {dragonheart.player} = "" # who obtained it
+
+  {adragonheart.count} = 0 # how many Artificial Dragon's Hearts have dropped total
+  {adragonheart.lastplayer} = "" # who got the most recent one
+
+  {voidHeart.count} = 0       # total number obtained
+  {voidHeart.lastplayer} = "" # last person who got one
+
+  {godboots.dropped} = false
+  {godboots.player} = "" # who obtained it
+
+  {godmushroom.dropped} = false
+  {godmushroom.player} = "" # who obtained it
+
+  {mushroomfollower.count} = 0 # how many mushroom followers have dropped total
+  {mushroomfollower.lastplayer} = "" # who got the most recent one
+
+  {herosrep.count} = 0 # how many have dropped total
+  {herosrep.lastplayer} = "" # who got the most recent one
+
+  {godwing.dropped} = false
+  {godwing.player} = "" # who obtained it
+
+  {godcrossbow.dropped} = false
+  {godcrossbow.player} = "" # who obtained it
+
+  {godfishingrod.dropped} = false
+  {godfishingrod.player} = "" # who obtained it
+
+  {leviathan.baited::*} = false # players whose next pickup becomes a Leviathan Tooth
+  {leviathan.fishing::*} = false # next pickup after a rod cast
+
+  {goldengluttony.count} = 0       # total number obtained
+  {goldengluttony.lastplayer} = "" # last person who got one
+
+
+
+
+# make allways day in deleoper mode and stop time
+command /developmode [<text>]:
+    aliases: /devmode
+    permission: goddrops.admin
+    trigger:
+        if arg-1 is "on":
+            if {developmode.enabled} is true:
+                send "&eDeveloper mode is already &aON&e." to player
+                stop
+            set {developmode.enabled} to true
+            send "&aDeveloper mode &f(&aON&f)&a. Time is now frozen to day." to player
+            set time to 10:00
+
+        else if arg-1 is "off":
+            if {developmode.enabled} is false:
+                send "&eDeveloper mode is already &cOFF&e." to player
+                stop
+            set {developmode.enabled} to false
+            send "&cDeveloper mode &f(&cOFF&f)&c. Time will progress normally." to player
+
+        else:
+            # Display pretty ON/OFF status
+            set {_state} to "&cOFF"
+            if {developmode.enabled} is true:
+                set {_state} to "&aON"
+
+            send "&cUsage: &f/developmode on/off &7(Currently: %{_state}%)" to player
+
+
+
+
+every 30 seconds:
+    if {developmode.enabled} is true:
+        loop all worlds:
+            set time of loop-world to 10:00
+            set weather of loop-world to sun
+
+
+
+# -----------------------------
+# turn off devmode auto
+# when i go offline
+# -----------------------------
+
+on quit:
+    if name of player is "Byrda1":
+        set {byrda1_logout_time} to now
+
+on join:
+    if name of player is "Byrda1":
+        delete {byrda1_logout_time}
+
+every 1 minute:
+    if {developmode.enabled} is true:
+        if {byrda1_logout_time} is set:
+            # how long since logout?
+            if difference between now and {byrda1_logout_time} is greater than 10 minutes:
+                set {developmode.enabled} to false
+                delete {byrda1_logout_time}
+                broadcast "&cDeveloper mode turned OFF: &eByrda1 &7has been offline for 10+ minutes."
+
+
+
+
+
+
+# --- Snowman (Snow Golem): 1/10, one-time ---
+on death of wolf:
+  attacker is a player
+  {snowmandiamond.dropped} is false
+  if random integer between 1 and 10 is 1:
+    set {snowmandiamond.dropped} to true
+    set {snowmandiamond.player} to name of attacker
+    drop diamond at location of victim
+    broadcast "&bA diamond has dropped from a Snowman! (&7one-time drop&b)"
+
+# --- Yellow wool mining: 1/10, one-time ---
+on break of yellow wool:
+  {yellowwool.dropped} is false
+  if random integer between 1 and 10 is 1:
+    set {yellowwool.dropped} to true
+    set {yellowwool.player} to name of player
+    cancel event
+    set block to air
+    drop diamond at location of event-block
+    broadcast "&e💎 %player% found a diamond while mining yellow wool! (&7one-time drop&e)"
+
+
+# ======================
+# --- Moss block mining: 1/100, one-time ---
+# ======================
+on break of moss block:
+  {godmoss.dropped} is false
+  if random integer between 1 and 10 is 1:
+    set {godmoss.dropped} to true
+    set {godmoss.player} to name of player
+    cancel event
+    set block to air
+    broadcast "&a💎 %player% found &d&lGODS MOSS &awhile mining moss! (&7one-time drop&a)"
+
+
+# ======================
+# --- One-time God Clock drop from ALLAY (1/10 chance) ---
+# ======================
+on death of allay:
+  attacker is a player
+  {godclock.dropped} is false
+  if random integer between 1 and 10 is 1:
+    set {godclock.dropped} to true
+    set {godclock.player} to name of attacker
+
+    # Build the same God Clock item
+    set {_i} to clock named "&d&lGods Clock"
+    clear {_l::*}
+    add "&7Right-click to toggle &eDay &7↔ &9Night" to {_l::*}
+    add "&8Cooldown: 30s" to {_l::*}
+    add "" to {_l::*}
+    add "&7When used between &e18:00 &7and &e04:59 &7-> turns &eDay&7." to {_l::*}
+    add "&7When used between &e05:00 &7and &e17:59 &7-> turns &9Night&7." to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    give {_i} to attacker
+    broadcast "&b✨ %attacker% obtained the one-time &d&lGods Clock&b from an &9Allay&b!"
+
+# ======================
+# --- One-time Dragon's Heart drop from ENDER DRAGON ---
+# ======================
+on death of ender dragon:
+  attacker is a player
+  {dragonheart.dropped} is false
+  if random integer between 1 and 1 is 1:
+    set {dragonheart.dropped} to true
+    set {dragonheart.player} to name of attacker
+
+    # Build Dragon's Heart item (nether star w/ custom lore)
+    set {_heart} to nether star named "&d&lDragon's Heart"
+    clear {_lore::*}
+    add "&7A fragment of the Ender Dragon’s soul." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dRIGHT CLICK:&7 Dragon Breath" to {_lore::*}
+    add "&7Unleash draconic breath in front of you." to {_lore::*}
+    add "&8Cooldown: 2.5s" to {_lore::*}
+    add "" to {_lore::*}
+    add "&dSNEAK + RIGHT CLICK:&7 Wing Burst" to {_lore::*}
+    add "&7Send out a shockwave and blast enemies away." to {_lore::*}
+    add "&8Cooldown: 6s" to {_lore::*}
+    set lore of {_heart} to {_lore::*}
+
+    give {_heart} to attacker
+    broadcast "&5🐲 %attacker% has slain the Ender Dragon and claimed the &d&lDragon's Heart&5! (&7one-time drop&5)"
+
+
+# ======================
+# --- Artificial Dragon's Heart drop from ENDER DRAGON ---
+# ======================
+on death of ender dragon:
+  attacker is a player
+
+  # 1-in-10 chance EVERY dragon kill
+  if random integer between 1 and 10 is 1:
+
+    # cache the attacker's name once so Skript stops being weird
+    set {_killer} to name of attacker
+
+    # Build Artificial Dragon's Heart item (nether star w/ custom lore)
+    set {_fake} to nether star named "&5&lArtificial Dragon's Heart"
+    clear {_lore::*}
+    add "&7A man-made echo of the Ender Dragon’s soul." to {_lore::*}
+    add "&7Contains half the power of the original &d&lDragon's Heart&7." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dRIGHT CLICK:&7 Dragon Breath" to {_lore::*}
+    add "&7Unleash unstable synthetic breath." to {_lore::*}
+    add "&8Cooldown: 5s" to {_lore::*}
+    add "" to {_lore::*}
+    add "&dSNEAK + RIGHT CLICK:&7 Wing Burst" to {_lore::*}
+    add "&7Blast enemies away with copied wings." to {_lore::*}
+    add "&8Cooldown: 10s" to {_lore::*}
+    set lore of {_fake} to {_lore::*}
+
+    give {_fake} to attacker
+
+    # track global stats
+    add 1 to {adragonheart.count}
+    set {adragonheart.lastplayer} to {_killer}
+
+    # track per-player count (use cached name)
+    add 1 to {adragonheart.playerCount::%{_killer}%}
+
+    # ensure killer is in the unique players list
+    set {_alreadyHas} to false
+    loop {adragonheart.players::*}:
+      if loop-value is {_killer}:
+        set {_alreadyHas} to true
+    if {_alreadyHas} is false:
+      add {_killer} to {adragonheart.players::*}
+
+    broadcast "&d⚗ %{_killer}% has obtained an &5&lArtificial Dragon's Heart&d from the Ender Dragon! (&71/10 chance&d)"
+
+
+# ======================
+# --- Void's Heart from Enderman (Skull ID 116) ---
+# ======================
+on death of enderman:
+    attacker is a player
+
+    # 1-in-200 chance – change if you want
+    if random integer between 1 and 133335 is 1:
+
+        set {_killer} to name of attacker
+
+        # Give the Skulls head (ID 116) to the killer
+        execute console command "skulls give %{_killer}% 116 1"
+
+        # --- tracking stats ---
+        add 1 to {voidHeart.count}
+        set {voidHeart.lastplayer} to {_killer}
+
+        add 1 to {voidHeart.playerCount::%{_killer}%}
+
+        # ensure killer is in the unique players list
+        set {_alreadyHas} to false
+        loop {voidHeart.players::*}:
+            if loop-value is {_killer}:
+                set {_alreadyHas} to true
+        if {_alreadyHas} is false:
+            add {_killer} to {voidHeart.players::*}
+
+        broadcast "&5☄ %{_killer}% &7has obtained a &d&lVoid's Heart&7 from an &5Enderman&7! (&71/133335 chance&7)"
+
+
+
+# --- Auto-convert Ender Pearl head in hand to Void's Heart ---
+every 1 seconds:
+    loop all players:
+        set {_i} to tool of loop-player
+
+        # if hand is empty, skip
+        if {_i} is not set:
+            stop
+
+        # already converted -> skip
+        if name of {_i} is "&d&lVoid's Heart":
+            stop
+
+        # the Ender Pearl head from /skulls
+        if name of {_i} is "&eEnder Pearl":
+
+            # build lore once
+            clear {_lore::*}
+            add "&7A condensed fragment of the void." to {_lore::*}
+            add "&7It pulses faintly with Ender energy." to {_lore::*}
+            add "" to {_lore::*}
+            add "&dDropped rarely from &5Endermen&d." to {_lore::*}
+
+            # edit the item in hand, not {_i}
+            set name of tool of loop-player to "&d&lVoid's Heart"
+            set lore of tool of loop-player to {_lore::*}
+
+            # SAVE THE EXACT 14-COMPONENT ITEM
+            if {voidHeart.item} is not set:
+                set {voidHeart.item} to tool of loop-player
+
+
+
+
+
+
+
+# ======================
+# --- GOD BOOTS FROM MAZE (first click on chest wins)
+# ======================
+
+# Set the maze chest once while looking at it
+command /setmazechest:
+  permission: goddrops.admin
+  trigger:
+    if targeted block is a chest:
+      set {mazeChestLoc} to location of targeted block
+      send "&aMaze chest set at &7%{mazeChestLoc}%"
+    else:
+      send "&cLook directly at the maze chest when running this."
+
+# First player to click THAT chest is credited
+on right click on chest:
+  {mazeChestLoc} is set
+  location of event-block is {mazeChestLoc}
+  {godboots.dropped} is false
+
+  set {godboots.dropped} to true
+  set {godboots.player} to name of player
+  broadcast "&e👢 %player% opened the MAZE chest and claimed the &d&lGODS FLIPFLOP&e! (&7first open wins&e)"
+
+
+# ======================
+# --- GODS MUSHROOM ---
+# ======================
+on break of red mushroom:
+  {godmushroom.dropped} is false
+  if random integer between 1 and 1 is 1:
+    set {godmushroom.dropped} to true
+    set {godmushroom.player} to name of player
+    cancel event
+    set block to air
+
+
+# Build God's Mushroom item
+    set {_i} to red mushroom named "{@shroom.item.name}"
+    clear {_lore::*}
+    add "&7A divine fungus that bends nature." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dRIGHT CLICK (ground)&7: place small shroom" to {_lore::*}
+    add "&dSNEAK + RIGHT CLICK (ground)&7: grow BIG shroom" to {_lore::*}
+    add "&dHIT PLAYER&7: apply mode effects" to {_lore::*}
+    add "" to {_lore::*}
+    add "&dSNEAK + LEFT CLICK&7: toggle &cRed &7↔ &6Brown" to {_lore::*}
+    set lore of {_i} to {_lore::*}
+
+    give {_i} to player
+    set {godshroom.mode.%uuid of player%} to "red"
+    broadcast "&e🍄 %player% 🍄 has mined a &c🍄Mushroom🍄 &e and claimed the &d&l🍄GODS MUSHROOM🍄&c! (&7one-time drop&c)"
+
+
+
+# ======================
+# --- Mushrooms Follower (break red/brown mushroom, 1/1000 chance) ---
+# ======================
+on break of red mushroom or brown mushroom:
+  # 1-in-1000 chance on every mushroom break
+  if random integer between 1 and 1000 is 1:
+
+    # save player name once
+    set {_breaker} to name of player
+
+    # prevent vanilla drops
+    cancel event
+    set block to air
+
+    # Build Mushrooms Follower item
+    set {_i} to red mushroom named "&d&lMUSHROOMS FOLLOWER"
+    clear {_l::*}
+    add "&7A sacred mushroom carried by devoted followers." to {_l::*}
+    add "&7It carries half the power of &d&lGODS MUSHROOM&7." to {_l::*}
+    add "&7Its aura binds itself to those who accept its call." to {_l::*}
+    add "&7Legends say it chooses its bearer, not the other way." to {_l::*}
+    add "&7The fungus bonds to your soul, feeding on your will." to {_l::*}
+    add "&7Two forms reflect your intent." to {_l::*}
+    add "" to {_l::*}
+    add "&cRed &7— fury of spores." to {_l::*}
+    add "&6Brown &7— blessing of earth." to {_l::*}
+    add "" to {_l::*}
+    add "&7Follow the fungus. Become part of its cycle." to {_l::*}
+    add "" to {_l::*}
+    add "&dRIGHT CLICK (ground)&7: place small shroom" to {_l::*}
+    add "&dHIT PLAYER&7: apply mode effects" to {_l::*}
+    add "" to {_l::*}
+    add "&dSNEAK + LEFT CLICK&7: toggle &cRed &7↔ &6Brown" to {_l::*}
+    set lore of {_i} to {_l::*}
+
+    give {_i} to player
+
+    # track global stats
+    add 1 to {mushroomfollower.count}
+    set {mushroomfollower.lastplayer} to {_breaker}
+
+    # track per-player count (use cached name)
+    add 1 to {mushroomfollower.playerCount::%{_breaker}%}
+
+    # ensure breaker is in the unique players list
+    set {_alreadyHas} to false
+    loop {mushroomfollower.players::*}:
+      if loop-value is {_breaker}:
+        set {_alreadyHas} to true
+    if {_alreadyHas} is false:
+      add {_breaker} to {mushroomfollower.players::*}
+
+    broadcast "&e🍄%{_breaker}%🍄 has obtained the &d&lMUSHROOMS FOLLOWER&d!!!"
+
+
+
+# ======================
+# --- The Heros Reputation ---
+# ======================
+on death of pillager:
+  attacker is a player
+
+  # 1-in-1000 chance on every pillager kill
+  if random integer between 1 and 1000 is 1:
+
+    # cache player name 
+    set {_killer} to name of attacker
+
+    # Build the item
+    set {_i} to emerald named "&d&lThe Heros Reputation"
+    clear {_lore::*}
+    add "&7Hero of the Village." to {_lore::*}
+    add "&7Your deeds echo through every market stall." to {_lore::*}
+    add "" to {_lore::*}
+    add "&aPerk:&7 Villagers grant you &aHUGE discounts&7 now." to {_lore::*}
+    set lore of {_i} to {_lore::*}
+
+    give {_i} to attacker
+
+    # track global stats
+    add 1 to {herosrep.count}
+    set {herosrep.lastplayer} to {_killer}
+
+    # track per-player count
+    add 1 to {herosrep.playerCount::%{_killer}%}
+
+    # ensure killer is in the unique players list
+    set {_alreadyHas} to false
+    loop {herosrep.players::*}:
+      if loop-value is {_killer}:
+        set {_alreadyHas} to true
+    if {_alreadyHas} is false:
+      add {_killer} to {herosrep.players::*}
+
+    broadcast "&a💚 %{_killer}% 💚 has earned &d&lThe Heros Reputation&a by defeating a &7Pillager&a! (&71/1000 chance&a)"
+
+
+# Heros Reputation - Hold to get Hero of the Village VI
+function _herosrep_has_in_hand(p: player) :: boolean:
+    # Check main hand
+    set {_main} to tool of {_p}
+    if {_main} is set:
+        if name of {_main} is "&d&lThe Heros Reputation":
+            return true
+
+    # Check offhand
+    set {_off} to off hand item of {_p}
+    if {_off} is set:
+        if name of {_off} is "&d&lThe Heros Reputation":
+            return true
+
+    return false
+
+
+function _herosrep_check_effect(p: player):
+    set {_id} to uuid of {_p}
+    set {_has} to _herosrep_has_in_hand({_p})
+    set {_name} to name of {_p}
+
+    if {_has} is true:
+        if {herosrep.effect.%{_id}%} is not true:
+            # Give Hero of the Village VI (amplifier 5) for a long time
+            execute console command "effect give %{_name}% minecraft:hero_of_the_village 999999 5 true"
+            set {herosrep.effect.%{_id}%} to true
+    else:
+        if {herosrep.effect.%{_id}%} is true:
+            # Remove Hero of the Village effect
+            execute console command "effect clear %{_name}% minecraft:hero_of_the_village"
+            delete {herosrep.effect.%{_id}%}
+
+
+on join:
+    _herosrep_check_effect(player)
+
+on respawn:
+    _herosrep_check_effect(player)
+
+on pickup:
+    _herosrep_check_effect(player)
+
+on drop:
+    _herosrep_check_effect(player)
+
+on inventory click:
+    wait 1 tick
+    _herosrep_check_effect(player)
+
+on swap hand items:
+    wait 1 tick
+    _herosrep_check_effect(player)
+
+on death of player:
+    delete {herosrep.effect.%uuid of victim%}
+    # effect will be cleared by vanilla on death anyway
+
+
+every 1 seconds:
+    loop all players:
+        _herosrep_check_effect(loop-player)
+
+
+
+
+
+
+
+# ======================
+# --- GODS WINGS
+# ======================
+command /setgodwingschest:
+  permission: goddrops.admin
+  trigger:
+    if targeted block is a chest:
+      set {godwingsChestLoc} to location of targeted block
+      send "&aMaze chest set at &7%{godwingsChestLoc}%"
+    else:
+      send "&cLook directly at the maze chest when running this."
+
+# First player to click THAT chest is credited
+on right click on chest:
+  {godwingsChestLoc} is set
+  location of event-block is {godwingsChestLoc}
+  {godwing.dropped} is false
+
+  set {godwing.dropped} to true
+  set {godwing.player} to name of player
+  broadcast "&e 💨 %player% found and claimed &d&lGODS WINGS&e! (&7first open wins&e)"
+
+
+
+# ======================
+# --- Gods Crossbow from PILLAGER boss (one-time) ---
+# ======================
+on death of pillager:
+    attacker is a player
+    name of victim is "&d&lGods Crossbow Weilder"
+    {godcrossbow.dropped} is false
+
+    # optional: you can remove this random check, it's always true anyway
+    if random integer between 1 and 1 is 1:
+        set {godcrossbow.dropped} to true
+        set {godcrossbow.player} to name of attacker
+
+        # Build the same Gods Crossbow item as the /givegodscrossbow command
+        set {_i} to crossbow named "&d&lGods Crossbow"
+        clear {_l::*}
+        add "&7Press Right-Click to fire like a minigun." to {_l::*}
+        add "&7Sneak or switch items to stop." to {_l::*}
+        add "&8Ammo: Arrows" to {_l::*}
+        set lore of {_i} to {_l::*}
+
+        give {_i} to attacker
+        broadcast "&d🏹 %attacker% has obtained the &d&lGods Crossbow&d from killing &d&lGods Crossbow Weilder&d!"
+
+
+
+# ======================
+# --- GODS fishingrod
+# ======================
+command /setgodfishingrodchest:
+  permission: goddrops.admin
+  trigger:
+    if targeted block is a chest:
+      set {godfishingrodChestLoc} to location of targeted block
+      send "&arod chest set at &7%{godfishingrodChestLoc}%"
+    else:
+      send "&cLook directly at the maze chest when running this."
+
+# First player to click THAT chest is credited
+on right click on chest:
+  {godfishingrodChestLoc} is set
+  location of event-block is {godfishingrodChestLoc}
+  {godfishingrod.dropped} is false
+
+  set {godfishingrod.dropped} to true
+  set {godfishingrod.player} to name of player
+  broadcast "&e %player% 🎣  found and claimed &d&lGODS LEVIATHAN HOOK&e! (&7first open wins&e)"
+
+#_________
+# --- LEVIATHAN BAIT & TOOTH ---
+# {leviathan.fishing::<uuid>} = true  -> next pickup is from fishing
+# {leviathan.baited::<uuid>}  = true  -> that cast used bait
+
+# 1) Player casts the fishing rod
+on right click:
+    # Disable whole system after GODS LEVIATHAN HOOK is obtained
+    if {godfishingrod.dropped} is true:
+        stop
+
+    # Must be a fishing rod
+    if tool of player is not fishing rod:
+        stop
+
+    set {_p} to player
+    set {_id} to uuid of {_p}
+
+    # Mark that the next pickup comes from this cast
+    set {leviathan.fishing::%{_id}%} to true
+
+    # If this line is NOT already baited, try to use bait now.
+    # This prevents reeling (second right-click) from consuming more bait.
+    if {leviathan.baited::%{_id}%} is not true:
+        if {_p} has chorus fruit named "&d&lLeviathan Bait":
+            remove 1 chorus fruit named "&d&lLeviathan Bait" from {_p}
+            set {leviathan.baited::%{_id}%} to true
+            send "&5You offer &dLeviathan Bait &5to the depths..." to {_p}
+
+
+
+# 2) Player picks up ANY item (we only care right after a cast)
+on pickup:
+    # Disable whole system after GODS LEVIATHAN HOOK is obtained
+    if {godfishingrod.dropped} is true:
+        stop
+
+    set {_p} to player
+    set {_id} to uuid of {_p}
+
+    # Only act on the first pickup after a cast
+    if {leviathan.fishing::%{_id}%} is not true:
+        stop
+    delete {leviathan.fishing::%{_id}%} # consume the "cast"
+
+    # Snapshot of what they actually picked up
+    set {_stack} to event-item
+
+
+    # A) Cast was BAITED → 1/25 chance for a Leviathan Tooth
+    if {leviathan.baited::%{_id}%} is true:
+        delete {leviathan.baited::%{_id}%} # bait is spent
+
+        if random integer between 1 and 25 is 1:
+            wait 1 tick
+            remove {_stack} from {_p}'s inventory
+
+            # Build one of six different teeth (quartz item)
+            set {_tooth} to quartz named "&d&lLeviathan Tooth"
+            clear {_lore::*}
+            add "&7A jagged tooth from the ancient Leviathan." to {_lore::*}
+            add "" to {_lore::*}
+            add "&7Inscribed numbers:" to {_lore::*}
+
+            set {_part} to random integer between 1 and 6
+            if {_part} = 1:
+                add "&f2819.442" to {_lore::*}
+            else if {_part} = 2:
+                add "&f32.87500" to {_lore::*}
+            else if {_part} = 3:
+                add "&f32.87500" to {_lore::*}
+            else if {_part} = 4:
+                add "&f32.87500" to {_lore::*}
+            else if {_part} = 5:
+                add "&f32.87500" to {_lore::*}
+            else:
+                add "&f372.696" to {_lore::*}
+
+            set lore of {_tooth} to {_lore::*}
+
+            give {_tooth} to {_p}
+            send "&dThe Leviathan seems to have hooked on the bait... &7you try reeling it in but the line quickly snaps. The only thing you manage to get is one of its teeth." to {_p}
+        # if the roll fails, they just keep the normal catch
+        stop
+
+
+    # B) Cast was NOT baited → 1/100 chance for FOUL STENCH
+    # (used as ingredient to craft Leviathan Bait)
+    if random integer between 1 and 100 is 1:
+        wait 1 tick
+        remove {_stack} from {_p}'s inventory
+
+        # build the FOUL STENCH item (glow lichen w/ lore)
+        set {_stench} to glow lichen named "&5&lFoul Stench"
+        clear {_l::*}
+        add "&7A disgusting, rotting mass of abyssal slime." to {_l::*}
+        add "&7The smell clings to your hands." to {_l::*}
+        add "" to {_l::*}
+        add "&8Use this to craft some bait" to {_l::*}
+        set lore of {_stench} to {_l::*}
+
+        give {_stench} to {_p}
+        send "&7You reel in a &5&lFoul Stench&7... it reeks of something ancient and unpleasant." to {_p}
+        stop
+
+
+
+
+
+# ======================================
+# TRACK GOLDEN GLUTTONY OBTAINING
+# ======================================
+
+on inventory click:
+    set {_item} to event-item
+    if {_item} is not set:
+        stop
+
+    # Only care about our special item
+    if name of {_item} is not "&6&lGOLDEN GLUTTONY":
+        stop
+
+    set {_p} to player
+    set {_name} to name of {_p}
+
+    # --- one-time "first ever" announcement ---
+    if {goldengluttony.dropped} is false:
+        set {goldengluttony.dropped} to true
+        set {goldengluttony.player} to {_name}
+        broadcast "&6🍽 %{_name}% has cooked a &6&lGOLDEN GLUTTONY&6!"
+
+    # --- total + per-player stats ---
+    add 1 to {goldengluttony.count}
+    set {goldengluttony.lastplayer} to {_name}
+    add 1 to {goldengluttony.playerCount::%{_name}%}
+
+    # ensure they’re in the unique list
+    set {_seen} to false
+    loop {goldengluttony.players::*}:
+        if loop-value is {_name}:
+            set {_seen} to true
+    if {_seen} is false:
+        add {_name} to {goldengluttony.players::*}
+
+
+
+
+
+
+
+
+
+
+
+#------------------------------
+#--------------------------
+#-----------------------
+# --- Status (shows both + who) ---
+command /godstatus:
+  permission: goddrops.admin
+  trigger:
+    send "&8---- &6One-Time Drop Status &8----"
+    if {snowmandiamond.dropped} is true:
+      send "&bSnowman diamond: &cALREADY DROPPED &7(by &e%{snowmandiamond.player}%&7)"
+    else:
+      send "&bSnowman diamond: &aNOT DROPPED yet."
+
+    if {yellowwool.dropped} is true:
+      send "&eYellow wool diamond: &cALREADY OBTAINED &7(by &e%{yellowwool.player}%&7)"
+    else:
+      send "&eYellow wool diamond: &aNOT OBTAINED yet."
+
+    if {godclock.dropped} is true:
+      send "&eGod Clock: &cALREADY OBTAINED &7(by &e%{godclock.player}%&7)"
+    else:
+      send "&eGod Clock diamond: &aNOT OBTAINED yet."
+
+    if {godmoss.dropped} is true:
+      send "&eGods moss: &cALREADY OBTAINED &7(by &e%{godmoss.player}%&7)"
+    else:
+      send "&eGods moss: &aNOT OBTAINED yet."
+
+    if {dragonheart.dropped} is true:
+      send "&5Dragon's Heart: &cALREADY OBTAINED &7(by &e%{dragonheart.player}%&7)"
+    else:
+      send "&5Dragon's Heart: &aNOT OBTAINED yet."
+    
+    send "&eArtificial Dragon's Heart: &5%{adragonheart.count}% &7total drops so far."
+    if {adragonheart.count} > 0:
+      send "&7Last obtained by &d%{adragonheart.lastplayer}%&7."
+
+    if {godboots.dropped} is true:
+      send "&eGod Boots: &cALREADY OBTAINED &7(by &e%{godboots.player}%&7)"
+    else:
+      send "&eGod Boots: &aNOT OBTAINED yet."
+
+    if {godmushroom.dropped} is true:
+      send "&eGods Mushroom: &cALREADY OBTAINED &7(by &e%{godmushroom.player}%&7)"
+    else:
+      send "&eGods Mushroom: &aNOT OBTAINED yet."
+
+    send "&eMushrooms Follower: &5%{mushroomfollower.count}% &7total drops so far."
+    if {mushroomfollower.count} > 0:
+      send "&7Last obtained by &d%{mushroomfollower.lastplayer}%&7."
+
+    send "&eThe Heros Reputation: &5%{herosrep.count}% &7total drops so far."
+    if {herosrep.count} > 0:
+      send "&7Last obtained by &d%{herosrep.lastplayer}%&7."
+
+    if {godwing.dropped} is true:
+      send "&eGod Wings: &cALREADY OBTAINED &7(by &e%{godwing.player}%&7)"
+    else:
+      send "&eGod Wings: &aNOT OBTAINED yet."
+
+    if {godcrossbow.dropped} is true:
+      send "&eGods Crossbow: &cALREADY OBTAINED &7(by &e%{godcrossbow.player}%&7)"
+    else:
+      send "&eGods Crossbow: &aNOT OBTAINED yet."
+
+    if {godfishingrod.dropped} is true:
+      send "&eGod fishingrod: &cALREADY OBTAINED &7(by &e%{godfishingrod.player}%&7)"
+    else:
+      send "&eGod fishingrod: &aNOT OBTAINED yet."
+
+    send "&6Golden Gluttony: &5%{goldengluttony.count}% &7total drops so far."
+    if {goldengluttony.count} > 0:
+      send "&7Last obtained by &d%{goldengluttony.lastplayer}%&7."
+
+    send "&5Void's Heart: &d%{voidHeart.count}% &7total drops so far."
+    if {voidHeart.count} > 0:
+      send "&7Last obtained by &d%{voidHeart.lastplayer}%&7."
+
+
+
+    send "&8---------------------------"
+
+
+
+# --- Status (shows it for EVERYBODYYY) ---
+command /godstatusallonlyifness:
+  permission: goddrops.admin
+  trigger:
+    broadcast "&8---- &6One-Time Drop Status &8----"
+    if {snowmandiamond.dropped} is true:
+      broadcast "&bSnowman diamond: &cALREADY DROPPED &7(by &e%{snowmandiamond.player}%&7)"
+    else:
+      broadcast "&bSnowman diamond: &aNOT DROPPED yet."
+    if {yellowwool.dropped} is true:
+      broadcast "&eYellow wool diamond: &cALREADY OBTAINED &7(by &e%{yellowwool.player}%&7)"
+    else:
+      broadcast "&eYellow wool diamond: &aNOT OBTAINED yet."
+    if {godmoss.dropped} is true:
+      send "&eGods moss: &cALREADY OBTAINED &7(by &e%{godclock.player}%&7)"
+    else:
+      send "&eGods moss: &aNOT OBTAINED yet."
+    broadcast "&8---------------------------"
+
+
+# --- Reset both flags (optional) ---
+command /godreset:
+  permission: goddrops.admin
+  trigger:
+    set {snowmandiamond.dropped} to false
+    delete {snowmandiamond.player}
+    set {yellowwool.dropped} to false
+    delete {yellowwool.player}
+    send "&aReset. Both one-time drops can happen again."
+    set {dragonheart.dropped} to false
+    delete {dragonheart.player}
+
+
+# --- Reset drops (individual) ---
+command /yellowwoolreset:
+  permission: goddrops.admin
+  trigger:
+    set {yellowwool.dropped} to false
+    delete {yellowwool.player}
+    send "&aReset. The yellow wool diamond can drop again."
+
+
+command /snowreset:
+  permission: goddrops.admin
+  trigger:
+    set {snowmandiamond.dropped} to false
+    delete {snowmandiamond.player}
+    send "&aReset. The squid somthing hentai diamond can drop again."
+
+
+command /godclockreset:
+  permission: goddrops.admin
+  trigger:
+    set {godclock.dropped} to false
+    delete {godclock.player}
+    send "&aReset: God Clock can drop from an Allay again."
+
+
+command /godmossreset:
+  permission: goddrops.admin
+  trigger:
+    set {godmoss.dropped} to false
+    delete {godmoss.player}
+    send "&aReset: GODS MOSS can drop from a moss block again."
+
+
+command /dragonheartreset:
+  permission: goddrops.admin
+  trigger:
+    set {aotv.dropped} to false
+    delete {aotv.player}
+    send "&aReset: Dragon's Heart can drop from the Ender Dragon again."
+
+
+command /adragonheartreset:
+  permission: goddrops.admin
+  trigger:
+    delete {adragonheart.players::*}
+    delete {adragonheart.playerCount::*}
+    set {adragonheart.count} to 0
+    delete {adragonheart.lastplayer}
+    send "&dArtificial Dragon's Heart stats wiped."
+
+
+command /godbootsreset:
+  permission: goddrops.admin
+  trigger:
+    set {godboots.dropped} to false
+    delete {godboots.player}
+    send "&aReset: God Boots can drop again."
+
+
+command /godwingsreset:
+  permission: goddrops.admin
+  trigger:
+    set {godwing.dropped} to false
+    delete {godwing.player}
+    send "&aReset: God Wings can drop again."
+
+
+command /mushroomsfollowerreset:
+  permission: goddrops.admin
+  trigger:
+    delete {mushroomfollower.players::*}
+    delete {mushroomfollower.playerCount::*}
+    set {mushroomfollower.count} to 0
+    delete {mushroomfollower.lastplayer}
+    send "&dmushroomfollower's stats wiped."
+
+
+
+command /herosrepReset:
+  permission: goddrops.admin
+  trigger:
+    delete {herosrep.players::*}
+    delete {herosrep.playerCount::*}
+    set {herosrep.count} to 0
+    delete {herosrep.lastplayer}
+    # in case old data still exists from the one-time version:
+    delete {herosrep.player}
+    delete {herosrep.dropped}
+    send "&dThe Heros Reputation's stats wiped."
+
+
+command /godfishingrodreset:
+  permission: goddrops.admin
+  trigger:
+    set {godfishingrod.dropped} to false
+    delete {godfishingrod.player}
+    send "&aReset: God fishingrod can drop again."
+
+
+command /godcrossbowreset:
+  permission: goddrops.admin
+  trigger:
+    set {godcrossbow.dropped} to false
+    delete {godcrossbow.player}
+    send "&aReset: Gods Crossbow can drop from a Pillager again."
+
+
+command /goldengluttonyreset:
+    permission: goddrops.admin
+    trigger:
+        set {goldengluttony.dropped} to false
+        delete {goldengluttony.player}
+
+        set {goldengluttony.count} to 0
+        delete {goldengluttony.lastplayer}
+
+        delete {goldengluttony.playerCount::*}
+        delete {goldengluttony.players::*}
+
+        send "&aGolden Gluttony tracking has been fully reset."
+
+
+command /voidheartreset:
+  permission: goddrops.admin
+  trigger:
+    delete {voidHeart.players::*}
+    delete {voidHeart.playerCount::*}
+    set {voidHeart.count} to 0
+    delete {voidHeart.lastplayer}
+    send "&dVoid's Heart stats wiped."
+
+
+
+
+# _______________-----------------____________
+
+# --- List everyone who has obtained an Artificial Dragon's Heart ---
+command /adragonheartlist:
+  permission: goddrops.admin
+  trigger:
+    send "&8---- &dArtificial Dragon's Heart Recipients &8----"
+    if size of {adragonheart.players::*} is greater than 0:
+
+      loop {adragonheart.players::*}:
+        set {_p} to loop-value
+        set {_c} to {adragonheart.playerCount::%{_p}%}
+        if {_c} is not set:
+          set {_c} to 1
+        send "&5• &d%{_p}% &7x%{_c}%"
+
+      send "&8------------------------------------------"
+      send "&7Unique recipients: &d%size of {adragonheart.players::*}%"
+      send "&7Total drops overall: &d%{adragonheart.count}%"
+    else:
+      send "&cNo one has obtained an Artificial Dragon's Heart yet."
+
+
+
+# --- List everyone who has obtained an mushrooms follower ---
+command /mushroomsfollowerlist:
+  permission: goddrops.admin
+  trigger:
+    send "&8---- &dMushrooms Follower's Recipients &8----"
+    if size of {mushroomfollower.players::*} is greater than 0:
+
+      loop {mushroomfollower.players::*}:
+        set {_p} to loop-value
+        set {_c} to {mushroomfollower.playerCount::%{_p}%}
+        if {_c} is not set:
+          set {_c} to 1
+        send "&5• &d%{_p}% &7x%{_c}%"
+
+      send "&8------------------------------------------"
+      send "&7Unique recipients: &d%size of {mushroomfollower.players::*}%"
+      send "&7Total drops overall: &d%{mushroomfollower.count}%"
+    else:
+      send "&cNo one has obtained an Mushrooms Follower yet."
+
+
+
+
+# --- List everyone who has obtained a Heros Reputation ---
+command /herosreplist:
+  permission: goddrops.admin
+  trigger:
+    send "&8---- &dThe Heros Reputation Recipients &8----"
+    if size of {herosrep.players::*} is greater than 0:
+
+      loop {herosrep.players::*}:
+        set {_p} to loop-value
+        set {_c} to {herosrep.playerCount::%{_p}%}
+        if {_c} is not set:
+          set {_c} to 1
+        send "&5• &d%{_p}% &7x%{_c}%"
+
+      send "&8------------------------------------------"
+      send "&7Unique recipients: &d%size of {herosrep.players::*}%"
+      send "&7Total drops overall: &d%{herosrep.count}%"
+    else:
+      send "&cNo one has obtained The Heros Reputation yet."
+
+
+
+command /goldengluttonylist:
+    permission: goddrops.admin
+    trigger:
+        send "&8---- &6Golden Gluttony Recipients &8----"
+        if size of {goldengluttony.players::*} is greater than 0:
+
+            loop {goldengluttony.players::*}:
+                set {_p} to loop-value
+                set {_c} to {goldengluttony.playerCount::%{_p}%}
+                if {_c} is not set:
+                    set {_c} to 1
+                send "&6• &e%{_p}% &7x%{_c}%"
+
+            send "&8------------------------------------------"
+            send "&7Unique recipients: &e%size of {goldengluttony.players::*}%"
+            send "&7Total Golden Gluttony obtained: &e%{goldengluttony.count}%"
+        else:
+            send "&cNo one has obtained &6GOLDEN GLUTTONY&c yet."
+
+
+command /voidheartlist:
+  permission: goddrops.admin
+  trigger:
+    send "&8---- &dVoid's Heart Recipients &8----"
+    if size of {voidHeart.players::*} is greater than 0:
+
+      loop {voidHeart.players::*}:
+        set {_p} to loop-value
+        set {_c} to {voidHeart.playerCount::%{_p}%}
+        if {_c} is not set:
+          set {_c} to 1
+        send "&5• &d%{_p}% &7x%{_c}%"
+
+      send "&8------------------------------------------"
+      send "&7Unique recipients: &d%size of {voidHeart.players::*}%"
+      send "&7Total drops overall: &d%{voidHeart.count}%"
+    else:
+      send "&cNo one has obtained a Void's Heart yet."
+
+
+
+
+# --- Remove a specific player from the Heros Reputation records ---
+command /herosrepremove <text>:
+  permission: goddrops.admin
+  trigger:
+    set {_target} to arg-1
+
+    if {_target} is not set:
+      send "&cUsage: /herosrepremove <player>"
+      stop
+
+    if {herosrep.playerCount::%{_target}%} is not set:
+      send "&c%{_target}% has no record in the Heros Reputation list."
+      stop
+
+    # subtract their personal count from global total
+    set {_count} to {herosrep.playerCount::%{_target}%}
+    if {_count} is set:
+      remove {_count} from {herosrep.count}
+    else:
+      send "&7(No count value found — skipping global adjustment.)"
+
+    # delete all data for that player
+    delete {herosrep.playerCount::%{_target}%}
+    remove {_target} from {herosrep.players::*}
+
+    send "&aRemoved &d%{_target}% &afrom The Heros Reputation records."
+    send "&7New total: &d%{herosrep.count}% drops."
+
+
+
+
+
+
+# --- Remove a specific player from the Heros Reputation records ---
+command /adragremove <text>:
+  permission: goddrops.admin
+  trigger:
+    set {_target} to arg-1
+
+    if {_target} is not set:
+      send "&cUsage: /adragremove <player>"
+      stop
+
+    if {adragonheart.playerCount::%{_target}%} is not set:
+      send "&c%{_target}% has no record in the ADRAGGGGG list."
+      stop
+
+    # subtract their personal count from global total
+    set {_count} to {adragonheart.playerCount::%{_target}%}
+    if {_count} is set:
+      remove {_count} from {adragonheart.count}
+    else:
+      send "&7(No count value found — skipping global adjustment.)"
+
+    # delete all data for that player
+    delete {adragonheart.playerCount::%{_target}%}
+    remove {_target} from {adragonheart.players::*}
+
+    send "&aRemoved &d%{_target}% &afrom dragggggggg records."
+    send "&7New total: &d%{adragonheart.count}% drops."
+
+
+
+
