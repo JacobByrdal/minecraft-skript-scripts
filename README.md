@@ -6,6 +6,7 @@ Paper-based server using the Skript as plugin.
 
 - **Purpose**: add lightweight custom items, enchantments, boss-related mechanics and small quality-of-life features without heavy plugin overhead.
 - **Status**: actively developed by me (personal project). Use at own risk and test on a staging server first.
+- **Origin**: started as a small project to learn Java for university coursework.
 
 **Compatibility**
 
