@@ -1,0 +1,135 @@
+# ======================================
+#  GOD ITEM: Dragon's Heart
+#  v9 - Polished version
+#  visuals, sounds, cooldowns, no spam
+# ======================================
+
+options:
+  heart.name: &d&lDragon's Heart
+  heart.cooldown.breath: 2
+  heart.cooldown.wing: 6
+
+variables:
+  {dragonsheart.last.breath.%player%} = none
+  {dragonsheart.last.wing.%player%} = none
+
+
+# ---------------------------------
+# /giveDragonsHeart
+# ---------------------------------
+command /giveDragonsHeart [<player>]:
+  permission: godsitems.dragonsheart.give
+  trigger:
+    set {_item} to nether star named "{@heart.name}"
+
+    clear {_lore::*}
+    add "&7A fragment of the Ender Dragon’s soul." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dRIGHT CLICK:&7 Dragon Breath" to {_lore::*}
+    add "&7Unleash draconic breath in front of you." to {_lore::*}
+    add "&8Cooldown: {@heart.cooldown.breath}s" to {_lore::*}
+    add "" to {_lore::*}
+    add "&dSNEAK + RIGHT CLICK:&7 Wing Burst" to {_lore::*}
+    add "&7Send out a shockwave and blast enemies away." to {_lore::*}
+    add "&8Cooldown: {@heart.cooldown.wing}s" to {_lore::*}
+    set lore of {_item} to {_lore::*}
+
+    if arg-1 is set:
+      give {_item} to arg-1
+      send "&aGave {@heart.name}&a to &e%arg-1%&a." to player
+    else:
+      give {_item} to player
+      send "&aYou received {@heart.name}&a." to player
+
+
+# ---------------------------------
+# DRAGON BREATH
+# Right click while NOT sneaking
+# ---------------------------------
+on right click:
+  # must be holding Dragon’s Heart
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@heart.name}":
+    stop
+
+  # only trigger if NOT sneaking
+  if player is sneaking:
+    stop
+
+  # cooldown check
+  if {dragonsheart.last.breath.%player%} is set:
+    set {_elapsed} to difference between now and {dragonsheart.last.breath.%player%}
+    if {_elapsed} < {@heart.cooldown.breath} seconds:
+      set {_left} to {@heart.cooldown.breath} seconds - {_elapsed}
+      send "&cThe Heart is still charging Dragon Breath! &7(%{_left}%s left)" to player
+      stop
+  set {dragonsheart.last.breath.%player%} to now
+
+  # announce ability
+  send "&5&lDragon’s Heart &7» &dDragon Breath!" to player
+  play sound "entity.ender_dragon.growl" to player
+
+  # Beam: move forward 4 steps, damage mobs, summon breath particles
+  set {_beamLoc} to location of player
+
+  loop 4 times:
+    set {_beamLoc} to location 1 block in front of {_beamLoc}
+
+    loop all living entities in radius 2 around {_beamLoc}:
+      if loop-entity is not player:
+        damage loop-entity by 4
+
+    set {_bx} to x-coordinate of {_beamLoc}
+    set {_by} to y-coordinate of {_beamLoc}
+    set {_bz} to z-coordinate of {_beamLoc}
+
+    # summon area_effect_clouds
+    execute console command "summon area_effect_cloud %{_bx}% %{_by}% %{_bz}% {Particle:""minecraft:dragon_breath"",Radius:1.5f,RadiusPerTick:-0.05f,Duration:20}"
+
+
+
+# ---------------------------------
+# WING BURST
+# Shift + Right Click
+# ---------------------------------
+on right click:
+  # must be holding Dragon’s Heart
+  set {_held2} to tool of player
+  if {_held2} is not set:
+    stop
+  if name of {_held2} is not "{@heart.name}":
+    stop
+
+  # only trigger if SNEAKING
+  if player is not sneaking:
+    stop
+
+  # cooldown check
+  if {dragonsheart.last.wing.%player%} is set:
+    set {_elapsed2} to difference between now and {dragonsheart.last.wing.%player%}
+    if {_elapsed2} < {@heart.cooldown.wing} seconds:
+      set {_left2} to {@heart.cooldown.wing} seconds - {_elapsed2}
+      send "&cThe Heart must recover its wings! &7(%{_left2}%s left)" to player
+      stop
+  set {dragonsheart.last.wing.%player%} to now
+
+  # announce ability
+  send "&5&lDragon’s Heart &7» &dWing Burst!" to player
+  play sound "entity.ender_dragon.flap" to player
+
+
+  # knockback
+  set {_ploc} to location of player
+  loop all living entities in radius 6 around {_ploc}:
+    if loop-entity is not player:
+      push loop-entity away from player
+
+  # summon one big shockwave cloud
+  set {_px} to x-coordinate of player
+  set {_py} to y-coordinate of player
+  set {_pz} to z-coordinate of player
+
+  execute console command "summon area_effect_cloud %{_px}% %{_py}% %{_pz}% {Particle:""minecraft:dragon_breath"",Radius:6f,RadiusPerTick:-0.1f,Duration:2.5}"
+
