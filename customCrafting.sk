@@ -264,7 +264,7 @@ on load:
     # ASPECT OF THE END CRAFTING
     # ============================
 
-    # --- VOID'S HEART INGREDIENT ---
+    # --- VOID'S HEART INGREDIENT' ---
     if {voidHeart.item} is set:
         set {_voidHeart} to {voidHeart.item}
     else:
@@ -316,7 +316,7 @@ on fuel burn:
     if event-block is not blast furnace:
         stop
 
-    # Check what's in the input slot (0)
+    # Check what's in the input slot' (0)
     set {_in} to slot 0 of event-block
 
     if {_in} is not golden carrot:
@@ -324,7 +324,7 @@ on fuel burn:
     if name of {_in} is not "&bUncooked Enchanted Carrot":
         stop
 
-    # If the fuel being burned isn't a lava bucket, cancel it
+    # If the fuel being burned isn't a lava bucket, cancel it'
     if burned fuel is not lava bucket:
         cancel event
 

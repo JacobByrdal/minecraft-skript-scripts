@@ -70,14 +70,14 @@ on left click:
     set {_new} to brown mushroom named "{@shroom.item.name}"
     set lore of {_new} to {_lore::*}
     set amount of {_new} to {_amt}
-    set player's tool to {_new}
+    set player's tool to {_new} #'
     send "&6GODS MUSHROOM &7» Mode: &6Brown" to player
   else:
     set {godshroom.mode.%{_id}%} to "red"
     set {_new} to red mushroom named "{@shroom.item.name}"
     set lore of {_new} to {_lore::*}
     set amount of {_new} to {_amt}
-    set player's tool to {_new}
+    set player's tool to {_new} #'
     send "&6GODS MUSHROOM &7» Mode: &cRed" to player
 
 # =======================================

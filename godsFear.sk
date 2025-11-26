@@ -76,7 +76,7 @@ on damage:
 
   # --------- EFFECTS ON VICTIM (stun + slow + warden darkness) ---------
 
-  # Heavy slowness – they basically can't move
+  # Heavy slowness – they basically can't move'
   apply slowness 255 to victim for {@godfear.hit.slow.seconds} seconds
 
   # Tiny jump strength to help root them (no jumping away)
@@ -86,7 +86,7 @@ on damage:
   apply darkness to victim for {@godfear.hit.darkness.seconds} seconds
 
   # Title: "BE FEARED BY GODS POWERS"
-  # If your Skript doesn't support 'send title', replace this line with a console /title command.
+  # If your Skript doesn't support 'send title', replace this line with a console /title command.'
   send title "&5&lBE FEARED BY GODS POWERS" to victim for 80 ticks
 
   # --------- BONUS DAMAGE ON THIS HIT ---------

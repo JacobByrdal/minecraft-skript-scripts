@@ -248,12 +248,12 @@ on death of ender dragon:
     if {_alreadyHas} is false:
       add {_killer} to {adragonheart.players::*}
 
-    broadcast "&d⚗ %{_killer}% has obtained an &5&lArtificial Dragon's Heart&d from the Ender Dragon! (&71/10 chance&d)"
+    broadcast "&d⚗ %{_killer}% has obtained an &5&lArtificial Dragon's Heart&d from the Ender Dragon! (&71/10 chance&d)" 
 
 
 # ======================
-# --- Void's Heart from Enderman (Skull ID 116) ---
-# ======================
+# --- Void's Heart from Enderman (Skull ID 116) ---'
+# ====================== 
 on death of enderman:
     attacker is a player
 
@@ -283,7 +283,7 @@ on death of enderman:
 
 
 
-# --- Auto-convert Ender Pearl head in hand to Void's Heart ---
+# --- Auto-convert Ender Pearl head in hand to Void's Heart ---'
 every 1 seconds:
     loop all players:
         set {_i} to tool of loop-player
@@ -357,7 +357,7 @@ on break of red mushroom:
     set block to air
 
 
-# Build God's Mushroom item
+# Build God's Mushroom item'
     set {_i} to red mushroom named "{@shroom.item.name}"
     clear {_lore::*}
     add "&7A divine fungus that bends nature." to {_lore::*}
@@ -573,7 +573,7 @@ on death of pillager:
     name of victim is "&d&lGods Crossbow Weilder"
     {godcrossbow.dropped} is false
 
-    # optional: you can remove this random check, it's always true anyway
+    # optional: you can remove this random check, it's always true anyway '
     if random integer between 1 and 1 is 1:
         set {godcrossbow.dropped} to true
         set {godcrossbow.player} to name of attacker
@@ -668,7 +668,7 @@ on pickup:
 
         if random integer between 1 and 25 is 1:
             wait 1 tick
-            remove {_stack} from {_p}'s inventory
+            remove {_stack} from {_p}'s inventory #'
 
             # Build one of six different teeth (quartz item)
             set {_tooth} to quartz named "&d&lLeviathan Tooth"
@@ -703,7 +703,7 @@ on pickup:
     # (used as ingredient to craft Leviathan Bait)
     if random integer between 1 and 100 is 1:
         wait 1 tick
-        remove {_stack} from {_p}'s inventory
+        remove {_stack} from {_p}'s inventory #'
 
         # build the FOUL STENCH item (glow lichen w/ lore)
         set {_stench} to glow lichen named "&5&lFoul Stench"
@@ -1020,7 +1020,7 @@ command /voidheartreset:
 
 # _______________-----------------____________
 
-# --- List everyone who has obtained an Artificial Dragon's Heart ---
+# --- List everyone who has obtained an Artificial Dragon's Heart ---'
 command /adragonheartlist:
   permission: goddrops.admin
   trigger:

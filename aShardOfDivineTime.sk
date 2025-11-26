@@ -6,7 +6,9 @@ options:
 variables:
   {divinetime.last.%player%} = none
 
-# Use <text> for widest Skript compatibility. We'll parse it into a player.
+# ---------------------------------
+# /givedivinetime
+# ---------------------------------
 command /givedivinetime [<text>]:
   permission: divinetimeitems.clock.give
   trigger:
@@ -23,7 +25,6 @@ command /givedivinetime [<text>]:
     add "&7Use &e/checktime &7to view the current world time." to {_l::*}
     set lore of {_i} to {_l::*}
 
-    # If an argument was provided, try to give it to that player and stop
     if arg-1 is set:
       set {_p} to arg-1 parsed as player
       if {_p} is set:
@@ -33,7 +34,6 @@ command /givedivinetime [<text>]:
         send "&cPlayer '&f%arg-1%&c' not found or not online."
       stop
 
-    # Default: give to the executor
     give {_i} to player
     send "&aYou received &6A Shard of Divine Time&a."
 

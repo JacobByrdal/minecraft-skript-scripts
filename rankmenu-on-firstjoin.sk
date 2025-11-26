@@ -6,7 +6,7 @@ on first join:
     wait 5 ticks
     execute console command "dm open rankselector_menu %player%"
 
-# If they didn't choose last time, open again on next join
+# If they didn't choose last time, open again on next join'
 on join:
     if player has permission "group.owner": # <-- skip Owners
         stop
