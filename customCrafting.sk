@@ -290,6 +290,8 @@ on load:
     add "&7the direction you are facing." to {_aoteLore::*}
     add "" to {_aoteLore::*}
     add "&d&lABILITY: INSTANT TRANSMISSION" to {_aoteLore::*}
+    add "&7Grants &fSpeed 3&7 for &e30s&7." to {_aoteLore::*}
+    add "&7Speed Cooldown: &e30s" to {_aoteLore::*}
     add "&7Cooldown: &e0s" to {_aoteLore::*}
     set lore of {_aoteItem} to {_aoteLore::*}
 

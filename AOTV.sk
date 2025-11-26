@@ -5,8 +5,8 @@
 options:
   aote.item.name: &b&lASPECT OF THE END
   aote.tp.blocks: 10
-  aote.speed.seconds: 3
-  aote.speed.level: 2
+  aote.speed.seconds: 30
+  aote.speed.level: 3
   aote.cooldown.seconds: 0
   aote.msg.cooldown.seconds: 10
 
@@ -31,6 +31,8 @@ command /giveaote [<player>]:
     add "&7the direction you are facing." to {_lore::*}
     add "" to {_lore::*}
     add "&d&lABILITY: INSTANT TRANSMISSION" to {_lore::*}
+    add "&7Grants &fSpeed {@aote.speed.level}&7 for &e{@aote.speed.seconds}s&7." to {_lore::*}
+    add "&7Speed Cooldown: &e{@aote.speed.seconds}s" to {_lore::*}
     add "&7Cooldown: &e{@aote.cooldown.seconds}s" to {_lore::*}
     set lore of {_item} to {_lore::*}
 
@@ -38,6 +40,8 @@ command /giveaote [<player>]:
     send "&aYou have been granted &bASPECT OF THE END&a." to {_p}
     if {_p} is not player:
       send "&aGave &bASPECT OF THE END &ato &e%{_p}%&a." to player
+
+
 
 
 
@@ -91,9 +95,28 @@ on right click:
     send "&cNo valid teleport path found!" to player
     stop
 
-  # --- effects ---
-  apply speed {@aote.speed.level} to player for {@aote.speed.seconds} seconds
+  # --- make sound (and effects) ---
+  #apply speed {@aote.speed.level} to player for {@aote.speed.seconds} seconds
   play sound "entity.enderman.teleport" at player
+
+  # --- Apply effect plus cooldown ---
+  set {_id} to uuid of player
+  set {_now} to now
+  set {_lastSpeed} to {aote.speed.last.%{_id}%}
+
+  set {_canSpeed} to true
+  if {_lastSpeed} is set:
+    set {_elapsedSpeed} to difference between {_now} and {_lastSpeed}
+    if {_elapsedSpeed} < 31 seconds:
+      set {_canSpeed} to false
+
+  # --- apply speed if allowed ---
+  if {_canSpeed} is true:
+    apply speed {@aote.speed.level} to player for 30 seconds
+    set {aote.speed.last.%{_id}%} to {_now}
+  #else:
+    #send "&bAOTE &7» Speed still on cooldown!" to player
+
 
   # --- prevent ability spam message ---
   set {_msgLast} to {aote.last.msg.%{_id}%}
@@ -109,3 +132,37 @@ on right click:
   if {_sendMsg} is true:
     send "&bAOTE &7» &fInstant Transmission!" to player
     set {aote.last.msg.%{_id}%} to {_now}
+
+
+
+# ======================================
+# Block renaming and smithing, makeing it unable to turn it into a neitherriteSword
+# ======================================
+# --- Disable using AOTE in a smithing table ---
+on inventory click:
+  # Check if this is a smithing table inventory
+  if "%event-inventory%" contains "smithing":
+    loop all items in event-inventory:
+      if loop-item is not air:
+        if name of loop-item is "{@aote.item.name}":
+          cancel event
+          send "&cYou can't use a smithing table with &bASPECT OF THE END&c!" to event-player
+          stop
+
+
+# --- Disable renaming but allow combining ---
+on inventory click:
+  # Check if this is an anvil inventory (by its name)
+  if "%event-inventory%" contains "anvil":
+    # result slot of an anvil
+    if event-slot is slot 2 of event-inventory:
+      # base item in slot 0 must be our AOTE
+      if slot 0 of event-inventory is not air:
+        if name of slot 0 of event-inventory is "{@aote.item.name}":
+          # if result name changed -> rename attempt
+          if name of slot 2 of event-inventory is not "{@aote.item.name}":
+            cancel event
+            send "&cYou can't rename &bASPECT OF THE END&c!" to event-player
+
+
+
