@@ -40,8 +40,10 @@ variables:
   {godcrossbow.dropped} = false
   {godcrossbow.player} = "" # who obtained it
 
-  {godfishingrod.dropped} = false
-  {godfishingrod.player} = "" # who obtained it
+  {leviathanHook.dropped} = false
+  {leviathanHook.player} = "" # who obtained it
+  {leviathanHook.count} = 0    # total number obtained #----------------------------------------------------
+  {leviathanHook.lastplayer} = "" # last person who got one
 
   {leviathan.baited::*} = false # players whose next pickup becomes a Leviathan Tooth
   {leviathan.fishing::*} = false # next pickup after a rod cast
@@ -592,26 +594,60 @@ on death of pillager:
 
 
 # ======================
-# --- GODS fishingrod
+# --- GODS fishingrod (leviathan hook)
 # ======================
-command /setgodfishingrodchest:
+command /setleviathanHookchest:
   permission: goddrops.admin
   trigger:
     if targeted block is a chest:
-      set {godfishingrodChestLoc} to location of targeted block
-      send "&arod chest set at &7%{godfishingrodChestLoc}%"
+      set {leviathanHookChestLoc} to location of targeted block
+      send "&arod chest set at &7%{leviathanHookChestLoc}%"
     else:
       send "&cLook directly at the maze chest when running this."
 
 # First player to click THAT chest is credited
 on right click on chest:
-  {godfishingrodChestLoc} is set
-  location of event-block is {godfishingrodChestLoc}
-  {godfishingrod.dropped} is false
+  {leviathanHookChestLoc} is set
+  location of event-block is {leviathanHookChestLoc}
+  {leviathanHook.dropped} is false
 
-  set {godfishingrod.dropped} to true
-  set {godfishingrod.player} to name of player
-  broadcast "&e %player% 🎣  found and claimed &d&lGODS LEVIATHAN HOOK&e! (&7first open wins&e)"
+  # cache player name
+  set {_name} to name of player
+
+  # mark as taken
+  set {leviathanHook.dropped} to true
+  set {leviathanHook.player} to {_name}
+
+  # global stats
+  add 1 to {leviathanHook.count}
+  set {leviathanHook.lastplayer} to {_name}
+
+  # per-player stats
+  add 1 to {leviathanHook.playerCount::%{_name}%}
+
+  # ensure they're in the unique players list
+  set {_seen} to false
+  loop {leviathanHook.players::*}:
+    if loop-value is {_name}:
+      set {_seen} to true
+  if {_seen} is false:
+    add {_name} to {leviathanHook.players::*}
+
+  # safe notification when taken
+  set {leviathanHook.notify} to true
+
+  broadcast "&e %{leviathanHook.player}% 🎣  found and claimed &d&lLEVIATHAN HOOK&e! (&7first open wins&e)"
+
+
+
+# notify when joining
+on join:
+    if name of player is "Byrda1":
+        if {leviathanHook.notify} is true:
+            wait 1 seconds
+            send "&d[GodDrops] &e%{leviathanHook.player}% has obtained the &d&lLEVIATHAN HOOK&e! &7(Total: &d%{leviathanHook.count}%&7)" to player
+
+
 
 #_________
 # --- LEVIATHAN BAIT & TOOTH ---
@@ -621,7 +657,7 @@ on right click on chest:
 # 1) Player casts the fishing rod
 on right click:
     # Disable whole system after GODS LEVIATHAN HOOK is obtained
-    if {godfishingrod.dropped} is true:
+    if {leviathanHook.dropped} is true:
         stop
 
     # Must be a fishing rod
@@ -647,7 +683,7 @@ on right click:
 # 2) Player picks up ANY item (we only care right after a cast)
 on pickup:
     # Disable whole system after GODS LEVIATHAN HOOK is obtained
-    if {godfishingrod.dropped} is true:
+    if {leviathanHook.dropped} is true:
         stop
 
     set {_p} to player
@@ -679,17 +715,17 @@ on pickup:
 
             set {_part} to random integer between 1 and 6
             if {_part} = 1:
-                add "&f2819.442" to {_lore::*}
+                add "&f1069.604" to {_lore::*}
             else if {_part} = 2:
-                add "&f32.87500" to {_lore::*}
+                add "&f55.87500" to {_lore::*}
             else if {_part} = 3:
-                add "&f32.87500" to {_lore::*}
+                add "&f55.87500" to {_lore::*}
             else if {_part} = 4:
-                add "&f32.87500" to {_lore::*}
+                add "&f55.87500" to {_lore::*}
             else if {_part} = 5:
-                add "&f32.87500" to {_lore::*}
+                add "&f55.87500" to {_lore::*}
             else:
-                add "&f372.696" to {_lore::*}
+                add "&f-461.700" to {_lore::*}
 
             set lore of {_tooth} to {_lore::*}
 
@@ -832,10 +868,16 @@ command /godstatus:
     else:
       send "&eGods Crossbow: &aNOT OBTAINED yet."
 
-    if {godfishingrod.dropped} is true:
-      send "&eGod fishingrod: &cALREADY OBTAINED &7(by &e%{godfishingrod.player}%&7)"
+    if {leviathanHook.dropped} is true:
+      send "&eLeviathan Hook: &cALREADY OBTAINED &7(by &e%{leviathanHook.player}%&7)"
     else:
-      send "&eGod fishingrod: &aNOT OBTAINED yet."
+      send "&eLeviathan Hook: &aNOT OBTAINED yet."
+
+    send "&eLeviathan Hook: &d%{leviathanHook.count}% &7total drops so far."
+    if {leviathanHook.count} > 0:
+      send "&7Last obtained by &d%{leviathanHook.lastplayer}%&7."
+
+
 
     send "&6Golden Gluttony: &5%{goldengluttony.count}% &7total drops so far."
     if {goldengluttony.count} > 0:
@@ -975,11 +1017,11 @@ command /herosrepReset:
     send "&dThe Heros Reputation's stats wiped."
 
 
-command /godfishingrodreset:
+command /leviathanHookreset:
   permission: goddrops.admin
   trigger:
-    set {godfishingrod.dropped} to false
-    delete {godfishingrod.player}
+    set {leviathanHook.dropped} to false
+    delete {leviathanHook.player}
     send "&aReset: God fishingrod can drop again."
 
 
@@ -988,6 +1030,7 @@ command /godcrossbowreset:
   trigger:
     set {godcrossbow.dropped} to false
     delete {godcrossbow.player}
+    delete {leviathanHook.notify}
     send "&aReset: Gods Crossbow can drop from a Pillager again."
 
 
@@ -1127,6 +1170,25 @@ command /voidheartlist:
       send "&cNo one has obtained a Void's Heart yet."
 
 
+command /leviathanHooklist:
+  permission: goddrops.admin
+  trigger:
+    send "&8---- &eLeviathan's Hook Recipients &8----"
+    if size of {leviathanHook.players::*} is greater than 0:
+
+      loop {leviathanHook.players::*}:
+        set {_p} to loop-value
+        set {_c} to {leviathanHook.playerCount::%{_p}%}
+        if {_c} is not set:
+          set {_c} to 1
+        send "&5• &d%{_p}% &7x%{_c}%"
+
+      send "&8------------------------------------------"
+      send "&7Unique recipients: &d%size of {leviathanHook.players::*}%"
+      send "&7Total drops overall: &d%{leviathanHook.count}%"
+    else:
+      send "&cNo one has obtained a Leviathan Hook yet."
+
 
 
 # --- Remove a specific player from the Heros Reputation records ---
@@ -1189,6 +1251,8 @@ command /adragremove <text>:
 
     send "&aRemoved &d%{_target}% &afrom dragggggggg records."
     send "&7New total: &d%{adragonheart.count}% drops."
+
+
 
 
 
