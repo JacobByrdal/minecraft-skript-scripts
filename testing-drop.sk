@@ -1257,3 +1257,76 @@ command /adragremove <text>:
 
 
 
+
+
+# --- Remove a specific player from the Leviathan Hook records ---
+command /leviathanHookremove <text>:
+  permission: goddrops.admin
+  trigger:
+    set {_target} to arg-1
+
+    if {_target} is not set:
+      send "&cUsage: /leviathanHookremove <player>"
+      stop
+
+    if {leviathanHook.playerCount::%{_target}%} is not set:
+      send "&c%{_target}% has no record in the Leviathan Hook list."
+      stop
+
+    # subtract their personal count from global total
+    set {_count} to {leviathanHook.playerCount::%{_target}%}
+    if {_count} is set:
+      remove {_count} from {leviathanHook.count}
+    else:
+      send "&7(No count value found — skipping global adjustment.)"
+
+    # delete all data for that player
+    delete {leviathanHook.playerCount::%{_target}%}
+    remove {_target} from {leviathanHook.players::*}
+
+    # optional: if they were lastplayer, clear it
+    if {leviathanHook.lastplayer} is {_target}:
+      delete {leviathanHook.lastplayer}
+
+    send "&aRemoved &d%{_target}% &afrom the Leviathan Hook records."
+    send "&7New total: &d%{leviathanHook.count}% hooks."
+
+
+# --- Manually add/credit a player to the Leviathan Hook records ---
+# Usage:
+#   /leviathanHookadd PlayerName       -> adds 1
+#   /leviathanHookadd PlayerName 3     -> adds 3
+command /leviathanHookadd <text> [<number>]:
+  permission: goddrops.admin
+  trigger:
+    set {_target} to arg-1
+    if {_target} is not set:
+      send "&cUsage: /leviathanHookadd <player> [amount]"
+      stop
+
+    set {_amount} to 1
+    if arg-2 is set:
+      set {_amount} to arg-2
+
+    # update global count
+    add {_amount} to {leviathanHook.count}
+
+    # update per-player count
+    add {_amount} to {leviathanHook.playerCount::%{_target}%}
+
+    # ensure they're in the unique players list
+    set {_seen} to false
+    loop {leviathanHook.players::*}:
+      if loop-value is {_target}:
+        set {_seen} to true
+    if {_seen} is false:
+      add {_target} to {leviathanHook.players::*}
+
+    # set them as lastplayer, since they were just credited
+    set {leviathanHook.lastplayer} to {_target}
+
+    send "&aAdded &d%{_amount}% &aLeviathan Hook(s) to &d%{_target}%&a."
+    send "&7New total: &d%{leviathanHook.count}% hooks."
+
+
+

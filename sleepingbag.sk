@@ -1,0 +1,99 @@
+# ======================================
+# GOD ITEM: Sleeping Bag
+# ======================================
+
+options:
+  sleepbag.item.name: &b&lSleeping Bag
+  sleepbag.tp.cooldown.seconds: 1   # cooldown between teleports
+
+# --------------------------------------
+# /givesleepingbag
+# --------------------------------------
+command /givesleepingbag [<player>]:
+  permission: godsitems.sleepingbag.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    # saddle as base item 
+    set {_item} to saddle named "{@sleepbag.item.name}"
+
+    clear {_lore::*}
+    add "&7A portable resting place for wandering souls." to {_lore::*}
+    add "" to {_lore::*}
+    add "&bRIGHT CLICK (ground)&7:" to {_lore::*}
+    add "&7• Set your &bSleeping Bag Spawn&7 at that spot." to {_lore::*}
+    add "" to {_lore::*}
+    add "&bLEFT CLICK&7:" to {_lore::*}
+    add "&7• Teleport back to your &bSleeping Bag Spawn&7." to {_lore::*}
+    add "" to {_lore::*}
+    add "&d&lNOTE:&7 This spawn is &nseparate&7 from /home or beds." to {_lore::*}
+    add "&7Teleport cooldown: &e{@sleepbag.tp.cooldown.seconds}s" to {_lore::*}
+    set lore of {_item} to {_lore::*}
+
+    give {_item} to {_p}
+    send "&aYou have been given &bSLEEPING BAG&a." to {_p}
+    if {_p} is not player:
+      send "&aGave &bSLEEPING BAG &ato &e%{_p}%&a." to player
+
+
+# --------------------------------------
+# Rightckuj ground to set sleepingBag spawn
+# --------------------------------------
+on right click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@sleepbag.item.name}":
+    stop
+  if clicked block is not set:
+    stop
+
+  # save location just above clicked block
+  set {_loc} to location of clicked block
+  add 1 to y-coordinate of {_loc}
+
+  set {_id} to uuid of player
+  set {sleepbag.spawn.%{_id}%} to {_loc}
+
+  send "&bSLEEPING BAG &7» Your &bbag spawn&7 has been set at &e%x-coordinate of {_loc}%, %y-coordinate of {_loc}%, %z-coordinate of {_loc}% &7in &e%world of {_loc}%&7." to player
+  # if you want a sound:
+  play sound "block.respawn_anchor.set_spawn" at {_loc}
+
+
+# --------------------------------------
+# Leftclick to teleport to sleeping bag spawn
+# --------------------------------------
+on left click:
+  set {_held} to tool of player
+  if {_held} is not set:
+    stop
+  if name of {_held} is not "{@sleepbag.item.name}":
+    stop
+
+  set {_id} to uuid of player
+
+  # check if spawn exists
+  set {_dest} to {sleepbag.spawn.%{_id}%}
+  if {_dest} is not set:
+    send "&cSLEEPING BAG &7» You don't have a bag spawn set yet. &7Right-click the ground with it first." to player
+    stop
+
+  # cooldown handling
+  set {_now} to now
+  set {_last} to {sleepbag.last.tp.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@sleepbag.tp.cooldown.seconds} seconds:
+      set {_left} to {@sleepbag.tp.cooldown.seconds} seconds - {_elapsed}
+      send "&cSLEEPING BAG &7» Teleport on cooldown. Wait &e%{_left}%&7." to player
+      stop
+
+  # perform teleport
+  teleport player to {_dest}
+  set {sleepbag.last.tp.%{_id}%} to {_now}
+  send "&bSLEEPING BAG &7» &aYou return to your bag spawn." to player
+  # optional arrival sound
+  # play sound "entity.enderman.teleport" at player
