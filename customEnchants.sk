@@ -1,0 +1,230 @@
+# ======================================
+# VOID STEP ENCHANT BOOK + BOOTS
+# ======================================
+
+options:
+  voidstep.book.name: &5&lTOME OF VOID STEP
+  voidstep.boots.name: &5&lVOID STEP BOOTS
+
+  voidstep.jump.y: 1.0            # how high the double-jump kicks you up
+  voidstep.jump.forward: 0.7     # how much it also pushes you forward
+
+  voidstep.dash.speed: 1.0        # dash strength
+  voidstep.dash.cooldown.seconds: 2
+
+
+variables:
+  {voidstep.canDouble::*} = false
+  {voidstep.canDash::*} = false
+  {voidstep.lastDash::*} = none
+
+
+# -------------------------
+# Helper: is this item Void Step Boots?
+# -------------------------
+function _voidstep_is_boots(i: item) :: boolean:
+    if {_i} is not set:
+        return false
+    if name of {_i} is "{@voidstep.boots.name}":
+        return true
+
+    # fallback: check for our "Void Step" lore marker
+    loop lore of {_i}:
+        if loop-value contains "Void Step":
+            return true
+    return false
+
+
+# -------------------------
+# /givevoidstepbook
+# -------------------------
+command /givevoidstepbook [<player>]:
+  permission: godsitems.voidstep.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    set {_book} to enchanted book named "{@voidstep.book.name}"
+
+    clear {_lore::*}
+    add "&7A forbidden script on how to" to {_lore::*}
+    add "&7tear a step into the void itself." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dUse in an anvil with boots:" to {_lore::*}
+    add "&7• Grants &5Void Step Boots&7." to {_lore::*}
+    add "&7• &dDouble Jump&7 + &dAir Dash&7 in mid-air." to {_lore::*}
+    set lore of {_book} to {_lore::*}
+
+    give {_book} to {_p}
+    send "&aYou have been given &5TOME OF VOID STEP&a." to {_p}
+    if {_p} is not player:
+      send "&aGave &5TOME OF VOID STEP &ato &e%{_p}%&a." to player
+
+
+# -------------------------
+# Optional: /givevoidstepboots
+# -------------------------
+command /givevoidstepboots [<player>]:
+  permission: godsitems.voidstep.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    set {_boots} to netherite boots named "{@voidstep.boots.name}"
+
+    clear {_lore::*}
+    add "&7Boots that barely touch reality." to {_lore::*}
+    add "&7Each step hangs over the void itself." to {_lore::*}
+    add "" to {_lore::*}
+    add "&dABILITIES:" to {_lore::*}
+    add "&7• &dDouble-Jump&7: &fShift in mid-air." to {_lore::*}
+    add "&7• &dVoid Dash&7: &fRight-click in mid-air with an item." to {_lore::*}
+    add "" to {_lore::*}
+    add "&8(Only works while these boots are worn.)" to {_lore::*}
+    set lore of {_boots} to {_lore::*}
+
+    give {_boots} to {_p}
+    send "&aYou have been given {@voidstep.boots.name}&a." to {_p}
+    if {_p} is not player:
+      send "&aGave {@voidstep.boots.name} &ato &e%{_p}%&a." to player
+
+
+# -------------------------
+# ANVIL: Book + Boots -> Void Step Boots
+# -------------------------
+on inventory click:
+  # Only handle anvil inventories – string check (works on old Skript)
+  if "%event-inventory%" does not contain "Anvil":
+    stop
+
+  # Result slot in the anvil is slot 2 of the top inventory
+  if event-slot is not 2:
+    stop
+
+  set {_left} to item in slot 0 of event-inventory
+  set {_right} to item in slot 1 of event-inventory
+
+  if {_left} is not set:
+    stop
+  if {_right} is not set:
+    stop
+
+  # Right item must be our Void Step book
+  if name of {_right} is not "{@voidstep.book.name}":
+    stop
+
+  # Left item must be any kind of boots
+  set {_t} to "%type of {_left}%"
+  if "%{_t}%" does not contain "boots":
+    stop
+
+  # Replace vanilla anvil result with our custom boots
+  cancel event
+
+  set {_result} to {_left}
+  #set name of {_result} to "{@voidstep.boots.name}"
+
+  clear {_lore::*}
+  add "&7Void Step" to {_lore::*}
+  add "" to {_lore::*}
+  add "&dVoid Step's Abilities:" to {_lore::*}
+  add "&7• &dDouble-Jump&7: &fShift in mid-air." to {_lore::*}
+  add "&7• &dVoid Dash&7: &fRight-click in mid-air with an item." to {_lore::*}
+  add "" to {_lore::*}
+  add "&8Forged in an anvil using the &5TOME OF VOID STEP&8." to {_lore::*}
+  set lore of {_result} to {_lore::*}
+
+  set slot 0 of event-inventory to air
+  set slot 1 of event-inventory to air
+  give {_result} to player
+  play sound "block.anvil.use" at player
+  send "&5VOID STEP &7» Your boots have learned to defy gravity." to player
+
+
+# -------------------------
+# TRACK: on ground vs air & reset flags
+# -------------------------
+every 2 ticks:
+  loop all players:
+    set {_p} to loop-player
+    set {_id} to uuid of {_p}
+    set {_boots} to boots of {_p}
+
+    # not wearing Void Step Boots -> disable abilities
+    if _voidstep_is_boots({_boots}) is false:
+      set {voidstep.canDouble.%{_id}%} to false
+      set {voidstep.canDash.%{_id}%} to false
+    else:
+      # wearing them – reset abilities whenever they touch the ground
+      if {_p} is on ground:
+        set {voidstep.canDouble.%{_id}%} to true
+        set {voidstep.canDash.%{_id}%} to true
+
+
+
+# -------------------------
+# DOUBLE JUMP: Shift in mid-air
+# -------------------------
+on toggle sneak:
+  # only when they START sneaking
+  if player is not sneaking:
+    stop
+
+  set {_p} to player
+  set {_id} to uuid of {_p}
+  set {_boots} to boots of {_p}
+
+  if _voidstep_is_boots({_boots}) is false:
+    stop
+
+  if {_p} is on ground:
+    stop
+
+  if {voidstep.canDouble.%{_id}%} is not true:
+    stop
+
+  set {voidstep.canDouble.%{_id}%} to false
+
+  push {_p} upwards with speed {@voidstep.jump.y}
+  push {_p} forward with speed {@voidstep.jump.forward}
+
+  play sound "entity.enderman.teleport" at {_p}
+  send "&5VOID STEP &7» &dDouble Jump!" to {_p}
+
+
+# -------------------------
+# AIR DASH: Right-click in mid-air
+# -------------------------
+on right click:
+  set {_p} to player
+  set {_id} to uuid of {_p}
+  set {_boots} to boots of {_p}
+
+  if _voidstep_is_boots({_boots}) is false:
+    stop
+
+  if {_p} is on ground:
+    stop
+
+  if {voidstep.canDash.%{_id}%} is not true:
+    stop
+
+  set {_now} to now
+  set {_last} to {voidstep.lastDash.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@voidstep.dash.cooldown.seconds} seconds:
+      set {_left} to {@voidstep.dash.cooldown.seconds} seconds - {_elapsed}
+      send "&5VOID STEP &7» Dash on cooldown &8(&e%{_left}%&7 left&8)" to {_p}
+      stop
+
+  set {voidstep.lastDash.%{_id}%} to {_now}
+  set {voidstep.canDash.%{_id}%} to false
+
+  push {_p} forward with speed {@voidstep.dash.speed}
+  play sound "block.beacon.power_select" at {_p}
+  send "&5VOID STEP &7» &dAir Dash!" to {_p}

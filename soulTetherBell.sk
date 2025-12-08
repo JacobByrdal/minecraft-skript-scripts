@@ -1,0 +1,154 @@
+# ======================================
+# GOD ITEM: Soul Tether Bell
+# ======================================
+
+options:
+  soulbell.item.name: &b&lSOUL TETHER BELL
+  soulbell.cooldown.seconds: 10             # delay between teleports
+  soulbell.break.window.minutes: 30         # checking period for abuse
+  soulbell.max.uses.in.window: 2            # how many teleports allowed before breaking
+
+
+# ------------------------------
+# Function: Create Unique Bell (Unstackable)
+# ------------------------------
+function soulbell_item() :: item:
+    set {_uuid} to random uuid
+    set {_i} to bell named "{@soulbell.item.name}"
+
+    set lore of {_i} to "&7A bell bound to your soul."
+    add "&7If held upon death, it remembers where you fell." to lore of {_i}
+    add "&0SOULTAG:%{_uuid}%" to lore of {_i}
+    add "&bRIGHT CLICK&7: Return to your last grave." to lore of {_i}
+    add "&8If abused, the bell will break - losing where you fell." to lore of {_i}
+
+    # Hidden unique ID (to prevents stacking)
+
+    return {_i}
+
+
+
+# --------------------------------------
+# /givesoulbell
+# --------------------------------------
+command /givesoulbell [<player>]:
+  permission: godsitems.soulbell.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    give soulbell_item() to {_p}
+    send "&aYou have been granted the &bSOUL TETHER BELL&a." to {_p}
+
+
+
+# --------------------------------------
+# Store death location + keep ALL bells on respawn
+# --------------------------------------
+on death of player:
+  set {_p} to victim
+  set {_id} to uuid of {_p}
+
+  # count bells (stack-proof)
+  set {_count} to 0
+  loop items in inventory of {_p}:
+    if name of loop-value is "{@soulbell.item.name}":
+      add amount of loop-value to {_count}
+
+  if {_count} <= 0:
+    stop
+
+  # remember how many bells to return later
+  set {soulbell.saved.%{_id}%} to {_count}
+
+  # remove ALL bells from drops (important!)
+  loop drops:
+    if name of loop-value is "{@soulbell.item.name}":
+      remove loop-value from drops
+
+  # save death location
+  set {soulbell.death.%{_id}%} to location of {_p}
+  set {soulbell.ready.%{_id}%} to true
+
+  send "&5Your soul tether flickers... a grave has been marked." to {_p}
+  play sound "block.bell.use" at {_p}
+
+
+
+
+# --------------------------------------
+# Give BALLS (bells xD) back when the player respawns
+# (ALL that they had when they died)
+# --------------------------------------
+on respawn:
+  set {_p} to player
+  set {_id} to uuid of {_p}
+  set {_n} to {soulbell.saved.%{_id}%}
+
+  if {_n} is not set:
+    stop
+
+  delete {soulbell.saved.%{_id}%}
+
+  loop {_n} times:
+    give soulbell_item() to {_p}
+
+# --------------------------------------
+# Right-click — Teleport to death location
+# --------------------------------------
+on right click:
+  set {_held} to tool of player
+  if name of {_held} is not "{@soulbell.item.name}":
+    stop
+
+  set {_id} to uuid of player
+
+  # Check if death marker exists
+  if {soulbell.death.%{_id}%} is not set:
+    send "&cThe bell is silent. No death location stored." to player
+    stop
+
+  # Prevent re-use without new death
+  if {soulbell.ready.%{_id}%} is not true:
+    send "&8The bell has already been rung for this fate." to player
+    stop
+
+  # Cooldown handling
+  set {_now} to now
+  set {_last} to {soulbell.last.tp.%{_id}%}
+  if {_last} is set:
+    set {_elapsed} to difference between {_now} and {_last}
+    if {_elapsed} < {@soulbell.cooldown.seconds} seconds:
+      set {_left} to {@soulbell.cooldown.seconds} seconds - {_elapsed}
+      send "&cThe bell resonates too recently. Wait &e%{_left}%&7." to player
+      stop
+
+  # Abuse check — track usage frequencies
+  add {_now} to {soulbell.usehistory.%{_id}%::*}
+
+  # purge outdated entries
+  loop {soulbell.usehistory.%{_id}%::*}:
+    if difference between {_now} and loop-value > {@soulbell.break.window.minutes} minutes:
+      remove loop-value from {soulbell.usehistory.%{_id}%::*}
+
+  # break if too many uses in period
+  if size of {soulbell.usehistory.%{_id}%::*} > {@soulbell.max.uses.in.window}:
+    send "&4CRACK!! &7The bell shatters — your soul has abused its balance." to player
+    play sound "entity.item.break" at player
+    remove {_held} from player's inventory #'
+    delete {soulbell.death.%{_id}%}
+    delete {soulbell.ready.%{_id}%}
+    # reset abuse history so a new bell starts clean
+    delete {soulbell.usehistory.%{_id}%::*}
+    stop
+
+  # Teleport
+  teleport player to {soulbell.death.%{_id}%}
+  set {soulbell.last.tp.%{_id}%} to {_now}
+  set {soulbell.ready.%{_id}%} to false
+
+  send "&5The bell tolls... &dYou return to your grave." to player
+  play sound "block.beacon.activate" at player
+  play sound "block.amethyst_block.chime" at player

@@ -1,0 +1,92 @@
+# ======================================
+# GOD ITEM: Magnetic Core
+# ======================================
+
+options:
+  magcore.item.name: &b&lMAGNETIC CORE
+  magcore.base.name: &eMagnet               # name that the Skulls head has
+  magcore.skull.id: 2553                    # Skulls ID 
+  magcore.radius: 8                         # radius in blocks for magnetic pull (vanilla pickup is ~3)
+  magcore.tick: 85                          # how often to pull items (ticks)
+
+# ------------------------------
+# Function: does player have a Magnetic Core (final item)?
+# ------------------------------
+function magcore_has(p: player) :: boolean:
+    loop items in inventory of {_p}:
+        if loop-value is set:
+            if name of loop-value is "{@magcore.item.name}":
+                return true
+    return false
+
+
+# --------------------------------------
+# /givemagcore – give the base skull via Skulls plugin
+# --------------------------------------
+command /givemagcore [<player>]:
+  permission: godsitems.magcore.give
+  trigger:
+    if arg-1 is set:
+      set {_p} to arg-1
+    else:
+      set {_p} to player
+
+    # give the custom head from Skulls (ID 2553)
+    execute console command "skulls give %name of {_p}% {@magcore.skull.id} 1"
+
+    send "&aYou have been granted the &bMAGNETIC CORE&a (base skull). It will auto-convert in your hand." to {_p}
+    if {_p} is not player:
+      send "&aGave &bMAGNETIC CORE &ato &e%{_p}%&a." to player
+
+
+# --------------------------------------
+# Auto-convert the Skulls head in hand into the real Magnetic Core item
+# --------------------------------------
+every 1 seconds:
+    loop all players:
+        set {_p} to loop-player
+        set {_i} to tool of {_p}
+
+        # if hand is empty, skip
+        if {_i} is not set:
+            continue
+
+        # already converted then skip
+        if name of {_i} is "{@magcore.item.name}":
+            continue
+
+        # base Skulls item name (change {@magcore.base.name} to match Skulls entry)
+        if name of {_i} is "{@magcore.base.name}":
+
+            # make each Magnetic Core unstackable with a hidden UUID
+            set {_uuid} to random uuid
+
+            clear {_lore::*}
+            add "&7A humming fragment of condensed gravity." to {_lore::*}
+            add "&7It bends nearby matter toward its bearer." to {_lore::*}
+            add "&0MAGCORE:%{_uuid}%" to {_lore::*}
+            add "&bPASSIVE:&7 While in your inventory," to {_lore::*}
+            add "&7nearby items and XP orbs are pulled to you." to {_lore::*}
+
+            set name of tool of {_p} to "{@magcore.item.name}"
+            set lore of tool of {_p} to {_lore::*}
+
+
+# --------------------------------------
+# Passive magnetic pull
+# --------------------------------------
+every {@magcore.tick} ticks:
+  loop all players:
+    set {_p} to loop-player
+
+    # only active if player has a finished Magnetic Core
+    if magcore_has({_p}) is false:
+      continue
+
+    # pull items
+    loop dropped items in radius {@magcore.radius} around {_p}:
+      teleport loop-value-2 to {_p}
+
+    # pull XP
+    loop experience orbs in radius {@magcore.radius} around {_p}:
+      teleport loop-value-2 to {_p}
